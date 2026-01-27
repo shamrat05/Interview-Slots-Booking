@@ -29,7 +29,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    whatsapp: '',
+    whatsapp: '+88',
     joiningPreference: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -456,8 +456,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
               </button>
               <button
                 onClick={() => {
-                  setStep('details');
-                  setFormData({ name: '', email: '', whatsapp: '', joiningPreference: '' });
+                  window.location.reload();
                 }}
                 className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
               >

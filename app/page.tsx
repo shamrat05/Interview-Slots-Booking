@@ -114,25 +114,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">LevelAxis Interview Scheduler</h1>
-                <p className="text-sm text-gray-500">Book your interview slot</p>
-              </div>
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center shadow-md">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <a
-              href="/admin"
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Admin Login
-            </a>
+            <div>
+              <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">LevelAxis</h1>
+              <p className="text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-widest">Interview Scheduler</p>
+            </div>
           </div>
+          <a
+            href="/admin"
+            className="text-xs font-semibold text-gray-500 hover:text-primary-600 transition-colors px-3 py-1.5 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200"
+          >
+            Admin Login
+          </a>
         </div>
       </header>
 

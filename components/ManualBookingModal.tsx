@@ -30,7 +30,7 @@ export default function ManualBookingModal({ slot, adminSecret, onClose, onSucce
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    whatsapp: '',
+    whatsapp: '+88',
     joiningPreference: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
