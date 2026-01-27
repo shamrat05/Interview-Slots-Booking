@@ -21,11 +21,12 @@ interface ManualBookingModalProps {
     endTime: string;
     displayTime: string;
   };
+  adminSecret: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualBookingModalProps) {
+export default function ManualBookingModal({ slot, adminSecret, onClose, onSuccess }: ManualBookingModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -63,7 +64,8 @@ export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualB
           slotId: slot.id,
           date: slot.date,
           startTime: slot.startTime,
-          endTime: slot.endTime
+          endTime: slot.endTime,
+          secret: adminSecret
         }),
       });
 

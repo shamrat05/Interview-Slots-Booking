@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     storage.initialize();
 
     const body = await request.json();
-    const { name, email, whatsapp, joiningPreference, slotId, date, startTime, endTime } = body;
+    const { name, email, whatsapp, joiningPreference, slotId, date, startTime, endTime, secret } = body;
 
     // Validate required fields
     if (!name || !email || !whatsapp || !joiningPreference || !slotId || !date || !startTime || !endTime) {
@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if admin is bypassing blocks
+    const isAdmin = secret && secret === storage.getAdminPassword();
 
     // Validate form data
     const validation = validateBookingForm(name, email, whatsapp);
@@ -82,13 +85,13 @@ export async function POST(request: NextRequest) {
     // Double-check slot availability (concurrency protection)
     if (await storage.isSlotBooked(date, slotId)) {
       return NextResponse.json(
-        { success: false, error: 'This slot has already been booked. Please choose another time.' },
+        { success: false, error: 'This slot has already been booked.' },
         { status: 409 }
       );
     }
 
-    // Check if slot is blocked by admin
-    if (await storage.isSlotBlocked(date, slotId)) {
+    // Check if slot is blocked by admin (bypass if valid secret provided)
+    if (!isAdmin && (await storage.isSlotBlocked(date, slotId) || await storage.isDayBlocked(date))) {
       return NextResponse.json(
         { success: false, error: 'This slot is currently unavailable for booking.' },
         { status: 403 }

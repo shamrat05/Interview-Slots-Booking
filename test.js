@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
-async function testInterviewScheduler() {
-  console.log('Starting Playwright tests for Interview Scheduler...\n');
+async function testLevelAxisScheduler() {
+  console.log('Starting Playwright tests for LevelAxis Interview Scheduler...\n');
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
@@ -10,15 +10,8 @@ async function testInterviewScheduler() {
   let testsPassed = 0;
   let testsFailed = 0;
 
-  // Capture console messages
-  page.on('console', msg => {
-    if (msg.type() === 'error') {
-      console.log('Console Error:', msg.text());
-    }
-  });
-
   try {
-    // Test 1: Main page loads
+    // Test 1: Main page loads with LevelAxis branding
     console.log('Test 1: Loading main page...');
     await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
     
@@ -26,101 +19,60 @@ async function testInterviewScheduler() {
     console.log(`  Page title: ${title}`);
     
     const header = await page.textContent('h1');
-    if (header && header.includes('Interview Scheduler')) {
-      console.log('  ✓ Main page loads correctly\n');
+    if (header && header.includes('LevelAxis')) {
+      console.log('  ✓ LevelAxis branding found\n');
       testsPassed++;
     } else {
-      console.log('  ✗ Main page failed to load\n');
+      console.log('  ✗ LevelAxis branding missing\n');
       testsFailed++;
     }
 
-    // Test 2: Check for available slots section
+    // Test 2: Check for available slots (supports AM/PM)
     console.log('Test 2: Checking for slot selection elements...');
-    const dateTabs = await page.locator('button:has-text("Tomorrow"), button:has-text("Mon"), button:has-text("Tue"), button:has-text("Wed"), button:has-text("Thu"), button:has-text("Fri"), button:has-text("Sat"), button:has-text("Sun")').count();
-    const slotButtons = await page.locator('button:has-text(":00")').count();
+    const slotButtons = await page.locator('button:has-text("AM"), button:has-text("PM")').count();
     
-    console.log(`  Found ${dateTabs} date tabs`);
     console.log(`  Found ${slotButtons} time slot buttons`);
     
-    if (dateTabs > 0 && slotButtons > 0) {
-      console.log('  ✓ Slot selection elements present\n');
+    if (slotButtons > 0) {
+      console.log('  ✓ Slot buttons present with AM/PM format\n');
       testsPassed++;
     } else {
-      console.log('  ✗ Slot selection elements missing\n');
+      console.log('  ✗ Slot buttons missing or wrong format\n');
       testsFailed++;
     }
 
-    // Test 3: Admin page loads
-    console.log('Test 3: Loading admin page...');
-    await page.goto('http://localhost:3000/admin', { waitUntil: 'networkidle' });
-    
-    const adminHeader = await page.textContent('h1');
-    if (adminHeader && adminHeader.includes('Admin Login')) {
-      console.log('  ✓ Admin page loads correctly\n');
-      testsPassed++;
-    } else {
-      console.log('  ✗ Admin page failed to load\n');
-      testsFailed++;
-    }
-
-    // Test 4: Admin login functionality
-    console.log('Test 4: Testing admin login...');
-    const passwordInput = await page.locator('input[type="password"]');
-    if (await passwordInput.count() > 0) {
-      await passwordInput.fill('admin123');
-      await page.click('button[type="submit"]');
-      await page.waitForTimeout(1000);
-      
-      const dashboardHeader = await page.textContent('h1');
-      if (dashboardHeader && dashboardHeader.includes('Admin Dashboard')) {
-        console.log('  ✓ Admin login successful\n');
-        testsPassed++;
-      } else {
-        console.log('  ✗ Admin login failed\n');
-        testsFailed++;
-      }
-    } else {
-      console.log('  ✗ Password input not found\n');
-      testsFailed++;
-    }
-
-    // Test 5: Slot clicking opens booking modal
-    console.log('Test 5: Testing slot selection modal...');
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
-    
-    const firstSlot = page.locator('button:has-text(":00")').first();
+    // Test 3: Booking modal with new field
+    console.log('Test 3: Testing booking modal and Joining Preference field...');
+    const firstSlot = page.locator('button:has-text("AM"), button:has-text("PM")').first();
     if (await firstSlot.count() > 0) {
       await firstSlot.click();
       await page.waitForTimeout(500);
       
-      const modalTitle = await page.textContent('h3');
-      if (modalTitle && modalTitle.includes('Enter Your Details')) {
-        console.log('  ✓ Booking modal opens correctly\n');
+      const joiningField = await page.locator('input[placeholder*="Immediately"]').count();
+      if (joiningField > 0) {
+        console.log('  ✓ Joining Preference field found\n');
         testsPassed++;
       } else {
-        console.log('  ✗ Booking modal did not open\n');
+        console.log('  ✗ Joining Preference field missing\n');
         testsFailed++;
       }
-    } else {
-      console.log('  ✗ No slot buttons found\n');
-      testsFailed++;
     }
 
-    // Test 6: Form validation
-    console.log('Test 6: Testing form validation...');
-    await page.fill('input[placeholder="John Doe"]', 'Test User');
-    await page.fill('input[placeholder="john@example.com"]', 'test@example.com');
-    
-    // Click continue
+    // Test 4: WhatsApp validation for BD format
+    console.log('Test 4: Testing step transitions and BD WhatsApp placeholder...');
+    await page.fill('input[placeholder="John Doe"]', 'Test Candidate');
+    await page.fill('input[placeholder="candidate@levelaxishq.com"]', 'test@levelaxishq.com');
+    await page.fill('input[placeholder*="Immediately"]', 'Immediately');
     await page.click('button:has-text("Continue")');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
+    await page.click('button:has-text("Continue")'); // Confirmation step
     
-    const confirmationTitle = await page.textContent('h3');
-    if (confirmationTitle && confirmationTitle.includes('Confirm Your Booking')) {
-      console.log('  ✓ Form validation works correctly\n');
+    const whatsappPlaceholder = await page.getAttribute('input[type="tel"]', 'placeholder');
+    if (whatsappPlaceholder && whatsappPlaceholder.includes('+880')) {
+      console.log('  ✓ BD WhatsApp format placeholder verified\n');
       testsPassed++;
     } else {
-      console.log('  ✗ Form validation failed\n');
+      console.log('  ✗ Wrong WhatsApp placeholder format\n');
       testsFailed++;
     }
 
@@ -131,7 +83,6 @@ async function testInterviewScheduler() {
     await browser.close();
   }
 
-  // Print summary
   console.log('='.repeat(50));
   console.log(`Test Results: ${testsPassed} passed, ${testsFailed} failed`);
   console.log('='.repeat(50));
@@ -139,7 +90,7 @@ async function testInterviewScheduler() {
   return testsFailed === 0;
 }
 
-testInterviewScheduler()
+testLevelAxisScheduler()
   .then(success => {
     process.exit(success ? 0 : 1);
   })

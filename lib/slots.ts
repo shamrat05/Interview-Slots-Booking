@@ -256,7 +256,18 @@ export function generateSlotId(date: string, startTime: string): string {
 }
 
 export function formatTimeToAMPM(time24: string): string {
-  let [hour, minute] = time24.split(':').map(Number);
+  if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) {
+    return time24 || '';
+  }
+
+  const parts = time24.split(':');
+  let hour = parseInt(parts[0], 10);
+  let minute = parseInt(parts[1], 10);
+
+  if (isNaN(hour) || isNaN(minute)) {
+    return time24;
+  }
+
   // Handle 24:00 as midnight AM
   const period = (hour >= 12 && hour < 24) ? 'PM' : 'AM';
   hour = hour % 12;

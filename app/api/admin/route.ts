@@ -42,18 +42,19 @@ export async function GET(request: NextRequest) {
 
     allBookings.forEach((dateBookings, date) => {
       dateBookings.forEach((bookingData, slotId) => {
-        const booking = bookingData as {
-          id: string;
-          slotId: string;
-          name: string;
-          email: string;
-          whatsapp: string;
-          joiningPreference: string;
-          bookedAt: string;
-          date: string;
-          startTime: string;
-          endTime: string;
-        };
+        const booking = bookingData as any;
+        
+        // Fallback for startTime/endTime if missing (legacy data)
+        let startTime = booking.startTime;
+        let endTime = booking.endTime;
+        
+        if (!startTime && booking.slotId) {
+          // slotId format is YYYY-MM-DD:HH-MM
+          const parts = booking.slotId.split(':');
+          if (parts.length > 1) {
+            startTime = parts[1].replace('-', ':');
+          }
+        }
 
         bookings.push({
           id: booking.id,
@@ -63,7 +64,11 @@ export async function GET(request: NextRequest) {
           whatsapp: booking.whatsapp,
           joiningPreference: booking.joiningPreference || 'Not provided',
           slotDate: booking.date,
-          slotTime: `${formatTimeToAMPM(booking.startTime)} - ${formatTimeToAMPM(booking.endTime)}`,
+          slotTime: startTime && endTime 
+            ? `${formatTimeToAMPM(startTime)} - ${formatTimeToAMPM(endTime)}`
+            : startTime 
+              ? formatTimeToAMPM(startTime)
+              : 'N/A',
           bookedAt: booking.bookedAt
         });
       });

@@ -639,8 +639,8 @@ export default function AdminPage() {
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">Manage Interview Bookings</p>
+                <h1 className="text-xl font-bold text-gray-900">LevelAxis Admin Dashboard</h1>
+                <p className="text-sm text-gray-500">Manage Interview Bookings & Availability</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

@@ -287,53 +287,52 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                     </div>
                   </div>
 
-                  <div className="mt-auto">
-                    {status === 'booked' ? (
-                      <div className="text-xs text-blue-700 font-medium truncate">
-                         User: {slot.booking?.name || 'Booked'}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => toggleBlock(slot)}
-                          disabled={processingId === slot.id}
-                          className={`py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${
-                            status === 'blocked'
-                              ? 'bg-gray-800 text-white hover:bg-gray-900'
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {processingId === slot.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : status === 'blocked' ? (
-                            <>
-                              <Unlock className="w-3 h-3" />
-                              Unblock
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-3 h-3" />
-                              Block
-                            </>
-                          )}
-                        </button>
-                        
-                        {status === 'available' && (
-                          <button
-                            onClick={() => {
-                              setSelectedSlotForManual(slot);
-                              setShowManualModal(true);
-                            }}
-                            className="py-1.5 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-primary-100 transition-colors"
-                          >
-                            <UserPlus className="w-3 h-3" />
-                            Book
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                                      <div className="mt-auto">
+                                      {status === 'booked' ? (
+                                        <div className="text-xs text-blue-700 font-medium truncate">
+                                           User: {slot.booking?.name || 'Booked'}
+                                        </div>
+                                      ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <button
+                                            onClick={() => toggleBlock(slot)}
+                                            disabled={processingId === slot.id}
+                                            className={`py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${
+                                              status === 'blocked'
+                                                ? 'bg-gray-800 text-white hover:bg-gray-900'
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                          >
+                                            {processingId === slot.id ? (
+                                              <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : status === 'blocked' ? (
+                                              <>
+                                                <Unlock className="w-3 h-3" />
+                                                Unblock
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Lock className="w-3 h-3" />
+                                                Block
+                                              </>
+                                            )}
+                                          </button>
+                                          
+                                          {(status === 'available' || status === 'blocked') && (
+                                            <button
+                                              onClick={() => {
+                                                setSelectedSlotForManual(slot);
+                                                setShowManualModal(true);
+                                              }}
+                                              className="py-1.5 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-primary-100 transition-colors"
+                                            >
+                                              <UserPlus className="w-3 h-3" />
+                                              Book
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>                </div>
               );
             })}
           </div>
@@ -343,6 +342,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
       {showManualModal && selectedSlotForManual && (
         <ManualBookingModal
           slot={selectedSlotForManual}
+          adminSecret={adminSecret}
           onClose={() => {
             setShowManualModal(false);
             setSelectedSlotForManual(null);
