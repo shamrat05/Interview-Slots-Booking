@@ -1,9 +1,9 @@
 import { addDays, format, parse, startOfDay } from 'date-fns';
 import { TimeSlot, SlotGenerationConfig } from './types';
-import { kv } from '@vercel/kv';
+import { getRedisClient } from './redis';
 
-// Vercel KV Storage Wrapper
-// This replaces the in-memory storage with persistent Redis storage
+// Redis Storage Wrapper
+// This uses direct Redis connection for persistent storage
 class KVStorage {
   private adminPassword: string = '';
 
@@ -17,30 +17,31 @@ class KVStorage {
   }
 
   async getBookings(date: string): Promise<Map<string, unknown>> {
-    const keys = await kv.keys(`booking:${date}:*`);
+    const redis = await getRedisClient();
+    const pattern = `booking:${date}:*`;
+    const keys = await redis.keys(pattern);
     const bookingsMap = new Map<string, unknown>();
-    
+
     if (keys.length === 0) {
       return bookingsMap;
     }
 
-    const values = await kv.mget(...keys);
-    
+    // Fetch all values for the keys
+    const values = await Promise.all(keys.map(key => redis.get(key)));
+
     keys.forEach((key, index) => {
-      // Extract slotId from key "booking:YYYY-MM-DD:slotId"
-      const parts = key.split(':');
-      // The slotId might contain colons or dashes, so we should be careful. 
-      // Our generateSlotId uses format "date:startTime". 
-      // The key structure is "booking:date:slotId". 
-      // Let's assume the last part(s) form the slotId or we just use the stored data which contains the slotId.
-      // But actually, getBookingKey joins with ':', so we can just look at the value.
-      
       const value = values[index];
-      if (value && typeof value === 'object') {
-        // @ts-ignore
-        const slotId = value.slotId; 
-        if (slotId) {
-          bookingsMap.set(slotId, value);
+      if (value) {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object') {
+            const slotId = parsed.slotId;
+            if (slotId) {
+              bookingsMap.set(slotId, parsed);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse booking data:', e);
         }
       }
     });
@@ -49,43 +50,60 @@ class KVStorage {
   }
 
   async setBooking(date: string, slotId: string, data: unknown): Promise<boolean> {
+    const redis = await getRedisClient();
     const key = this.getBookingKey(date, slotId);
-    
+
     // validation: check if already exists to prevent overwrite
-    // 'nx' means only set if not exists. Returns 1 if set, null if not.
-    // @ts-ignore - The types for @vercel/kv might be slightly different depending on version, but set with nx is standard redis.
-    const result = await kv.set(key, data, { nx: true });
-    
-    return result === 'OK' || result === 1;
+    // 'NX' means only set if not exists
+    const result = await redis.set(key, JSON.stringify(data), { NX: true });
+
+    return result === 'OK';
   }
 
   async getBooking(date: string, slotId: string): Promise<unknown | null> {
+    const redis = await getRedisClient();
     const key = this.getBookingKey(date, slotId);
-    return await kv.get(key);
+    const value = await redis.get(key);
+
+    if (!value) return null;
+
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      console.error('Failed to parse booking data:', e);
+      return null;
+    }
   }
 
   async getAllBookings(): Promise<Map<string, Map<string, unknown>>> {
+    const redis = await getRedisClient();
     // This is a heavy operation, effectively scanning all bookings.
     // In a real large app, we'd paginate or use sets. For this scale, `keys` is fine.
-    const keys = await kv.keys('booking:*');
+    const keys = await redis.keys('booking:*');
     const allBookings = new Map<string, Map<string, unknown>>();
 
     if (keys.length === 0) {
       return allBookings;
     }
 
-    const values = await kv.mget(...keys);
+    const values = await Promise.all(keys.map(key => redis.get(key)));
 
     keys.forEach((key, index) => {
       const value = values[index];
-      if (value && typeof value === 'object') {
-        // @ts-ignore
-        const { date, slotId } = value;
-        if (date && slotId) {
-          if (!allBookings.has(date)) {
-            allBookings.set(date, new Map());
+      if (value) {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object') {
+            const { date, slotId } = parsed;
+            if (date && slotId) {
+              if (!allBookings.has(date)) {
+                allBookings.set(date, new Map());
+              }
+              allBookings.get(date)!.set(slotId, parsed);
+            }
           }
-          allBookings.get(date)!.set(slotId, value);
+        } catch (e) {
+          console.error('Failed to parse booking data:', e);
         }
       }
     });
@@ -94,13 +112,15 @@ class KVStorage {
   }
 
   async deleteBooking(date: string, slotId: string): Promise<number> {
+    const redis = await getRedisClient();
     const key = this.getBookingKey(date, slotId);
-    return await kv.del(key);
+    return await redis.del(key);
   }
 
   async isSlotBooked(date: string, slotId: string): Promise<boolean> {
+    const redis = await getRedisClient();
     const key = this.getBookingKey(date, slotId);
-    const exists = await kv.exists(key);
+    const exists = await redis.exists(key);
     return exists === 1;
   }
 
@@ -130,7 +150,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
 
   const slots: TimeSlot[] = [];
   const today = startOfDay(new Date());
-  
+
   // Start from tomorrow
   const startDate = addDays(today, 1);
 
@@ -149,7 +169,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
 
   const bookingsPerDay = await Promise.all(datePromises);
   const bookingsMap = new Map<string, Map<string, unknown>>(); // Date -> (SlotId -> Booking)
-  
+
   dateStrings.forEach((dateStr, index) => {
     bookingsMap.set(dateStr, bookingsPerDay[index]);
   });
@@ -157,9 +177,9 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
     const currentDate = addDays(startDate, dayOffset);
     const dateStr = format(currentDate, 'yyyy-MM-dd');
-    
+
     const dayBookings = bookingsMap.get(dateStr) || new Map();
-    
+
     let currentHour = fullConfig.startHour;
 
     while (currentHour < fullConfig.endHour) {
@@ -167,9 +187,9 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       const endHour = currentHour + Math.floor(fullConfig.slotDurationMinutes / 60);
       const endMinutes = fullConfig.slotDurationMinutes % 60;
       const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
-      
+
       const slotId = generateSlotId(dateStr, startTime);
-      
+
       // Check if slot is booked in storage
       const bookingData = dayBookings.get(slotId);
       const isBooked = !!bookingData;
