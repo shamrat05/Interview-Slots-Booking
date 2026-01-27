@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           startTime: string;
           endTime: string;
         };
-        
+
         bookings.push({
           id: booking.id,
           name: booking.name,
@@ -152,6 +152,108 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting booking:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete booking' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    // Initialize storage
+    storage.initialize();
+
+    // Check for admin authentication
+    const searchParams = request.nextUrl.searchParams;
+    const adminSecret = searchParams.get('secret');
+
+    if (!adminSecret) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Validate admin password
+    const storedPassword = storage.getAdminPassword();
+    if (adminSecret !== storedPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid credentials' },
+        { status: 403 }
+      );
+    }
+
+    // Get booking to reschedule
+    const body = await request.json();
+    const { oldDate, oldSlotId, newDate, newSlotId, newStartTime, newEndTime } = body;
+
+    if (!oldDate || !oldSlotId || !newDate || !newSlotId || !newStartTime || !newEndTime) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required parameters for rescheduling' },
+        { status: 400 }
+      );
+    }
+
+    // Check if old booking exists
+    const oldBooking = await storage.getBooking(oldDate, oldSlotId);
+    if (!oldBooking) {
+      return NextResponse.json(
+        { success: false, error: 'Original booking not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if new slot is available
+    if (await storage.isSlotBooked(newDate, newSlotId)) {
+      return NextResponse.json(
+        { success: false, error: 'New slot is already booked' },
+        { status: 409 }
+      );
+    }
+
+    // Create new booking with updated slot information
+    const bookingData = oldBooking as {
+      name: string;
+      email: string;
+      whatsapp: string;
+      bookedAt: string;
+    };
+
+    const newBookingData = {
+      ...bookingData,
+      id: newSlotId,
+      slotId: newSlotId,
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      rescheduledAt: new Date().toISOString(),
+      originalBookedAt: bookingData.bookedAt
+    };
+
+    // Set new booking first
+    const created = await storage.setBooking(newDate, newSlotId, newBookingData);
+
+    if (!created) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to create new booking slot' },
+        { status: 500 }
+      );
+    }
+
+    // Delete old booking
+    await storage.deleteBooking(oldDate, oldSlotId);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Booking rescheduled successfully',
+      data: {
+        oldSlot: { date: oldDate, slotId: oldSlotId },
+        newSlot: { date: newDate, slotId: newSlotId, startTime: newStartTime, endTime: newEndTime }
+      }
+    });
+  } catch (error) {
+    console.error('Error rescheduling booking:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to reschedule booking' },
       { status: 500 }
     );
   }

@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Users, 
-  Calendar, 
-  Clock, 
-  Phone, 
-  Mail, 
+import {
+  Users,
+  Calendar,
+  Clock,
+  Phone,
+  Mail,
   Trash2,
   LogOut,
   Lock,
@@ -16,8 +16,14 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
-  ArrowLeft
+  ArrowLeft,
+  Download,
+  RefreshCw,
+  X,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface AdminBooking {
   id: string;
@@ -38,6 +44,218 @@ interface AdminData {
   };
 }
 
+interface ConfirmDialogProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  requireTyping?: boolean;
+  expectedText?: string;
+}
+
+function ConfirmDialog({
+  isOpen,
+  title,
+  message,
+  confirmText,
+  onConfirm,
+  onCancel,
+  requireTyping = false,
+  expectedText = 'DELETE'
+}: ConfirmDialogProps) {
+  const [typedText, setTypedText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = async () => {
+    setIsProcessing(true);
+    await onConfirm();
+    setIsProcessing(false);
+    setTypedText('');
+  };
+
+  const canConfirm = requireTyping ? typedText === expectedText : true;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          <button
+            onClick={onCancel}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <p className="text-gray-600 mb-6">{message}</p>
+
+        {requireTyping && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type <span className="font-mono font-bold text-red-600">{expectedText}</span> to confirm
+            </label>
+            <input
+              type="text"
+              value={typedText}
+              onChange={(e) => setTypedText(e.target.value)}
+              placeholder={expectedText}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
+              autoFocus
+            />
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!canConfirm || isProcessing}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              confirmText
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface RescheduleDialogProps {
+  isOpen: boolean;
+  booking: AdminBooking | null;
+  availableSlots: Array<{ date: string; slotId: string; startTime: string; endTime: string; displayTime: string }>;
+  onConfirm: (newDate: string, newSlotId: string, newStartTime: string, newEndTime: string) => void;
+  onCancel: () => void;
+}
+
+function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel }: RescheduleDialogProps) {
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isOpen || !booking) return null;
+
+  const handleConfirm = async () => {
+    if (!selectedSlot) return;
+
+    const slot = availableSlots.find(s => `${s.date}:${s.slotId}` === selectedSlot);
+    if (!slot) return;
+
+    setIsProcessing(true);
+    await onConfirm(slot.date, slot.slotId, slot.startTime, slot.endTime);
+    setIsProcessing(false);
+    setSelectedSlot('');
+  };
+
+  // Group slots by date
+  const groupedSlots = availableSlots.reduce((acc, slot) => {
+    if (!acc[slot.date]) acc[slot.date] = [];
+    acc[slot.date].push(slot);
+    return acc;
+  }, {} as Record<string, typeof availableSlots>);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900">Reschedule Booking</h3>
+            <button
+              onClick={onCancel}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <p className="text-gray-600 mt-2">
+            Rescheduling <span className="font-semibold">{booking.name}</span> from {booking.slotDate} {booking.slotTime}
+          </p>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex-1">
+          {Object.keys(groupedSlots).length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No available slots found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(groupedSlots).map(([date, slots]) => (
+                <div key={date} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 font-semibold text-gray-900">
+                    {date}
+                  </div>
+                  <div className="p-2 grid grid-cols-3 gap-2">
+                    {slots.map((slot) => {
+                      const slotKey = `${slot.date}:${slot.slotId}`;
+                      return (
+                        <button
+                          key={slotKey}
+                          onClick={() => setSelectedSlot(slotKey)}
+                          className={`px-3 py-2 text-sm rounded-lg border-2 transition-all ${selectedSlot === slotKey
+                            ? 'bg-primary-50 border-primary-500 text-primary-700 font-semibold'
+                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                            }`}
+                        >
+                          {slot.displayTime}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!selectedSlot || isProcessing}
+            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Rescheduling...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Reschedule
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,6 +265,11 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<AdminBooking | null>(null);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [bookingToReschedule, setBookingToReschedule] = useState<AdminBooking | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<Array<any>>([]);
 
   useEffect(() => {
     // Check if already authenticated (session storage)
@@ -75,6 +298,20 @@ export default function AdminPage() {
     }
   };
 
+  const fetchAvailableSlots = async () => {
+    try {
+      const response = await fetch('/api/slots');
+      const data = await response.json();
+      if (data.success) {
+        // Filter only available slots
+        const available = data.slots.filter((slot: any) => !slot.isBooked);
+        setAvailableSlots(available);
+      }
+    } catch (error) {
+      console.error('Failed to fetch available slots:', error);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -98,21 +335,32 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteBooking = async (booking: AdminBooking) => {
-    if (!confirm(`Are you sure you want to cancel the booking for ${booking.name}?`)) {
-      return;
-    }
+  const handleDeleteClick = (booking: AdminBooking) => {
+    setBookingToDelete(booking);
+    setShowDeleteDialog(true);
+  };
 
-    setDeletingId(booking.id);
+  const handleDeleteConfirm = async () => {
+    if (!bookingToDelete) return;
+
+    setDeletingId(bookingToDelete.id);
     try {
       const response = await fetch(
-        `/api/admin?secret=${encodeURIComponent(password)}&date=${encodeURIComponent(booking.slotDate)}&slotId=${encodeURIComponent(booking.id)}`,
-        { method: 'DELETE' }
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: bookingToDelete.slotDate,
+            slotId: bookingToDelete.id
+          })
+        }
       );
       const data = await response.json();
 
       if (data.success) {
-        // Refresh the bookings list
+        setShowDeleteDialog(false);
+        setBookingToDelete(null);
         fetchBookings();
       } else {
         alert(data.error || 'Failed to delete booking');
@@ -124,11 +372,107 @@ export default function AdminPage() {
     }
   };
 
+  const handleRescheduleClick = async (booking: AdminBooking) => {
+    setBookingToReschedule(booking);
+    await fetchAvailableSlots();
+    setShowRescheduleDialog(true);
+  };
+
+  const handleRescheduleConfirm = async (
+    newDate: string,
+    newSlotId: string,
+    newStartTime: string,
+    newEndTime: string
+  ) => {
+    if (!bookingToReschedule) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            oldDate: bookingToReschedule.slotDate,
+            oldSlotId: bookingToReschedule.id,
+            newDate,
+            newSlotId,
+            newStartTime,
+            newEndTime
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setShowRescheduleDialog(false);
+        setBookingToReschedule(null);
+        fetchBookings();
+        alert('Booking rescheduled successfully!');
+      } else {
+        alert(data.error || 'Failed to reschedule booking');
+      }
+    } catch {
+      alert('Failed to reschedule booking');
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
     setPassword('');
     setAdminData(null);
+  };
+
+  const exportToCSV = () => {
+    if (!adminData || adminData.bookings.length === 0) {
+      alert('No bookings to export');
+      return;
+    }
+
+    const csvData = adminData.bookings.map(booking => ({
+      Name: booking.name,
+      Email: booking.email,
+      'WhatsApp': booking.whatsapp,
+      'Date': booking.slotDate,
+      'Time': booking.slotTime,
+      'Booked At': new Date(booking.bookedAt).toLocaleString()
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(csvData);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `interview-bookings-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToExcel = () => {
+    if (!adminData || adminData.bookings.length === 0) {
+      alert('No bookings to export');
+      return;
+    }
+
+    const excelData = adminData.bookings.map(booking => ({
+      'Name': booking.name,
+      'Email': booking.email,
+      'WhatsApp': booking.whatsapp,
+      'Date': booking.slotDate,
+      'Time': booking.slotTime,
+      'Booked At': new Date(booking.bookedAt).toLocaleString()
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+
+    XLSX.writeFile(wb, `interview-bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Group bookings by date
@@ -229,6 +573,27 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={exportToCSV}
+                  disabled={!adminData || adminData.bookings.length === 0}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export to CSV"
+                >
+                  <FileText className="w-4 h-4" />
+                  CSV
+                </button>
+                <button
+                  onClick={exportToExcel}
+                  disabled={!adminData || adminData.bookings.length === 0}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export to Excel"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Excel
+                </button>
+              </div>
+              <div className="h-6 w-px bg-gray-300"></div>
               <a
                 href="/"
                 className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
@@ -316,7 +681,7 @@ export default function AdminPage() {
                 </div>
                 <div className="divide-y divide-gray-100">
                   {bookings.map((booking) => (
-                    <div 
+                    <div
                       key={booking.id}
                       className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
@@ -343,18 +708,27 @@ export default function AdminPage() {
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteBooking(booking)}
-                        disabled={deletingId === booking.id}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Cancel booking"
-                      >
-                        {deletingId === booking.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-5 h-5" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleRescheduleClick(booking)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Reschedule booking"
+                        >
+                          <RefreshCw className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(booking)}
+                          disabled={deletingId === booking.id}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Cancel booking"
+                        >
+                          {deletingId === booking.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -363,6 +737,49 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Cancel Booking"
+        message={`Are you sure you want to cancel the booking for ${bookingToDelete?.name}? This action cannot be undone.`}
+        confirmText="Delete Booking"
+        requireTyping={true}
+        expectedText="DELETE"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setBookingToDelete(null);
+        }}
+      />
+
+      {/* Reschedule Dialog */}
+      <RescheduleDialog
+        isOpen={showRescheduleDialog}
+        booking={bookingToReschedule}
+        availableSlots={availableSlots}
+        onConfirm={handleRescheduleConfirm}
+        onCancel={() => {
+          setShowRescheduleDialog(false);
+          setBookingToReschedule(null);
+        }}
+      />
+
+      <style jsx global>{`
+        @keyframes scale-in {
+          from {
+            transform: scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
