@@ -7,6 +7,7 @@ export interface TimeSlot {
   endTime: string;
   displayTime: string;
   isBooked: boolean;
+  isBlocked?: boolean;
   booking?: BookingDetails;
 }
 
@@ -52,6 +53,7 @@ export interface SlotGenerationConfig {
   slotDurationMinutes: number;
   breakDurationMinutes: number;
   numberOfDays: number;
+  whatsappTemplate?: string;
 }
 
 export interface ValidationResult {

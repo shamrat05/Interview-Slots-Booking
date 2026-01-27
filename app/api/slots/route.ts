@@ -2,11 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { storage, generateTimeSlots } from '@/lib/slots';
 import { validateBookingForm, validateWhatsAppNumber, generateBookingId } from '@/lib/validation';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Initialize storage if needed
     if (!storage.getAdminPassword()) {
       storage.initialize();
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const returnInfo = searchParams.get('info') === 'true';
+
+    if (returnInfo) {
+      const config = await storage.getGlobalConfig();
+      // Combine with defaults
+      const fullConfig = {
+        startHour: config.startHour ?? parseInt(process.env.START_HOUR || '9'),
+        endHour: config.endHour ?? parseInt(process.env.END_HOUR || '17'),
+        slotDurationMinutes: config.slotDurationMinutes ?? parseInt(process.env.SLOT_DURATION_MINUTES || '60'),
+        breakDurationMinutes: config.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
+        numberOfDays: config.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
+      };
+      return NextResponse.json({ success: true, config: fullConfig });
     }
 
     // Generate all slots with current booking status
@@ -60,6 +76,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'This slot has already been booked. Please choose another time.' },
         { status: 409 }
+      );
+    }
+
+    // Check if slot is blocked by admin
+    if (await storage.isSlotBlocked(date, slotId)) {
+      return NextResponse.json(
+        { success: false, error: 'This slot is currently unavailable for booking.' },
+        { status: 403 }
       );
     }
 

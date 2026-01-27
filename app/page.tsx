@@ -8,6 +8,7 @@ import { TimeSlot } from '@/lib/types';
 
 export default function Home() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [config, setConfig] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,24 +16,36 @@ export default function Home() {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 
   useEffect(() => {
-    fetchSlots();
+    fetchData();
   }, []);
 
-  const fetchSlots = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/slots');
-      const data = await response.json();
+      
+      // Fetch slots and config in parallel
+      // api/admin/config requires secret, but we need a public config for the banner
+      const [slotsRes, configRes] = await Promise.all([
+        fetch('/api/slots'),
+        fetch('/api/slots?info=true') // We'll update the slots API to return config info too
+      ]);
+      
+      const slotsData = await slotsRes.json();
+      const infoData = await configRes.json();
 
-      if (data.success) {
-        setSlots(data.data.slots);
-        // Set initial selected date to the first date with available slots
-        const firstDate = data.data.slots[0]?.date;
-        if (firstDate) {
-          setSelectedDate(firstDate);
+      if (slotsData.success) {
+        const allSlots = slotsData.data.slots;
+        setSlots(allSlots);
+        const available = allSlots.filter((s: TimeSlot) => !s.isBooked && !s.isBlocked);
+        if (available.length > 0) {
+          setSelectedDate(available[0].date);
+        } else if (allSlots.length > 0) {
+          setSelectedDate(allSlots[0].date);
         }
-      } else {
-        setError(data.error || 'Failed to load slots');
+      }
+
+      if (infoData.success && infoData.config) {
+        setConfig(infoData.config);
       }
     } catch {
       setError('Failed to connect to server');
@@ -41,7 +54,21 @@ export default function Home() {
     }
   };
 
+  const fetchSlots = async () => {
+    try {
+      const response = await fetch('/api/slots');
+      const data = await response.json();
+
+      if (data.success) {
+        setSlots(data.data.slots);
+      }
+    } catch (error) {
+      console.error('Failed to refresh slots');
+    }
+  };
+
   const getDatesForDisplay = () => {
+    // Only show dates that have at least one slot (even if booked, for UI consistency)
     const dates = [...new Set(slots.map(s => s.date))];
     return dates.map(date => ({
       date,
@@ -51,7 +78,8 @@ export default function Home() {
   };
 
   const getSlotsForSelectedDate = () => {
-    return slots.filter(s => s.date === selectedDate);
+    // Return slots for date, but filter out BLOCKED slots from the user view
+    return slots.filter(s => s.date === selectedDate && !s.isBlocked);
   };
 
   const handleSlotClick = (slot: TimeSlot) => {
@@ -132,7 +160,7 @@ export default function Home() {
             <div>
               <h3 className="font-medium text-blue-900">Interview Details</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Each interview slot is <strong>1 hour</strong> with a <strong>15-minute break</strong> between slots.
+                Each interview slot is <strong>{config?.slotDurationMinutes || 60} minutes</strong> with a <strong>{config?.breakDurationMinutes || 15}-minute break</strong> between slots.
                 Please choose a convenient time from the available options below.
               </p>
             </div>
