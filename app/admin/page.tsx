@@ -27,6 +27,7 @@ import * as XLSX from 'xlsx';
 
 interface AdminBooking {
   id: string;
+  slotId: string;
   name: string;
   email: string;
   whatsapp: string;
@@ -352,7 +353,7 @@ export default function AdminPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             date: bookingToDelete.slotDate,
-            slotId: bookingToDelete.id
+            slotId: bookingToDelete.slotId
           })
         }
       );
@@ -394,7 +395,7 @@ export default function AdminPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             oldDate: bookingToReschedule.slotDate,
-            oldSlotId: bookingToReschedule.id,
+            oldSlotId: bookingToReschedule.slotId,
             newDate,
             newSlotId,
             newStartTime,
@@ -433,7 +434,7 @@ export default function AdminPage() {
     const csvData = adminData.bookings.map(booking => ({
       Name: booking.name,
       Email: booking.email,
-      'WhatsApp': booking.whatsapp,
+      'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Booked At': new Date(booking.bookedAt).toLocaleString()
@@ -462,7 +463,7 @@ export default function AdminPage() {
     const excelData = adminData.bookings.map(booking => ({
       'Name': booking.name,
       'Email': booking.email,
-      'WhatsApp': booking.whatsapp,
+      'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Booked At': new Date(booking.bookedAt).toLocaleString()

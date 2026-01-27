@@ -180,13 +180,22 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
 
     const dayBookings = bookingsMap.get(dateStr) || new Map();
 
-    let currentHour = fullConfig.startHour;
+    const startMinutes = fullConfig.startHour * 60;
+    const endMinutes = fullConfig.endHour * 60;
+    
+    let currentMinutes = startMinutes;
 
-    while (currentHour < fullConfig.endHour) {
-      const startTime = `${currentHour.toString().padStart(2, '0')}:00`;
-      const endHour = currentHour + Math.floor(fullConfig.slotDurationMinutes / 60);
-      const endMinutes = fullConfig.slotDurationMinutes % 60;
-      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+    while (currentMinutes + fullConfig.slotDurationMinutes <= endMinutes) {
+      // Calculate start time
+      const startH = Math.floor(currentMinutes / 60);
+      const startM = currentMinutes % 60;
+      const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
+
+      // Calculate end time
+      const slotEndMinutes = currentMinutes + fullConfig.slotDurationMinutes;
+      const endH = Math.floor(slotEndMinutes / 60);
+      const endM = slotEndMinutes % 60;
+      const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
       const slotId = generateSlotId(dateStr, startTime);
 
@@ -213,7 +222,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       });
 
       // Move to next slot with break
-      currentHour = endHour + Math.floor(fullConfig.breakDurationMinutes / 60);
+      currentMinutes += fullConfig.slotDurationMinutes + fullConfig.breakDurationMinutes;
     }
   }
 

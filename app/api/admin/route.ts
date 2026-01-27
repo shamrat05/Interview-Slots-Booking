@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const allBookings = await storage.getAllBookings();
     const bookings: Array<{
       id: string;
+      slotId: string;
       name: string;
       email: string;
       whatsapp: string;
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
       dateBookings.forEach((bookingData, slotId) => {
         const booking = bookingData as {
           id: string;
+          slotId: string;
           name: string;
           email: string;
           whatsapp: string;
@@ -53,6 +55,7 @@ export async function GET(request: NextRequest) {
 
         bookings.push({
           id: booking.id,
+          slotId: booking.slotId,
           name: booking.name,
           email: booking.email,
           whatsapp: booking.whatsapp,
