@@ -6,23 +6,27 @@ Your admin panel now has **production-grade** capabilities that make it enterpri
 
 ### 1. **Visual Schedule Manager** 🗓️ [NEW]
 - ✅ **Dynamic Availability Control**: Block or hold any slot instantly.
+- ✅ **Day-Wise Full Block**: Instantly disable all slots for a specific date with one click.
 - ✅ **Calendar Integration**: Select dates up to 14 days in advance.
 - ✅ **One-Click Blocking**: Toggle slot visibility for applicants with a single click.
 - ✅ **Visual Indicators**: Color-coded states for Available, Booked, and Blocked slots.
 
 ### 2. **Global Scheduler Settings** ⚙️ [NEW]
-- ✅ **Dynamic Hours**: Change working start/end hours from the UI.
+- ✅ **Dynamic Hours**: Change working start/end hours (9 AM – 12 AM) from the UI.
+- ✅ **AM/PM Formatting**: All times are displayed in a user-friendly AM/PM format.
 - ✅ **Custom Durations**: Adjust slot and break times (e.g., 45m slots, 10m breaks).
 - ✅ **Visibility Control**: Set how many days applicants can see in advance.
 - ✅ **Redis-Backed**: Settings persist across server restarts and deployments.
 
 ### 3. **Smart WhatsApp Integration** 💬 [NEW]
+- ✅ **BD Format Optimization**: Smart number handling for Bangladesh (auto-formats 01XXX to +88017...).
 - ✅ **Click-to-Chat**: Instant WhatsApp buttons for every booking.
-- ✅ **Custom Templates**: Define your own confirmation message using placeholders like `{name}`, `{date}`, and `{time}`.
+- ✅ **Custom Templates**: Define your own confirmation message using placeholders like `{name}`, `{day}`, `{date}`, and `{time}`.
 - ✅ **Automated Links**: Exported CSV/Excel files now contain clickable WhatsApp links.
 
-### 4. **Manual Booking** ➕ [NEW]
+### 4. **Manual Booking & CRM** ➕ [NEW]
 - ✅ **Admin Overrides**: Book slots on behalf of candidates directly from the dashboard.
+- ✅ **Joining Preferences**: Track and search candidate joining availability (e.g., "Immediately").
 - ✅ **Unified Workflow**: Manual bookings use the same validation and storage as public bookings.
 
 ### 5. **Advanced Search & Filtering** 🔍 [NEW]

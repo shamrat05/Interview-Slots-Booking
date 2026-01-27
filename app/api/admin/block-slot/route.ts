@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { date, slotId, action } = body; // action: 'block' | 'unblock'
+    const { date, slotId, action } = body; // action: 'block' | 'unblock' | 'blockDay' | 'unblockDay'
 
-    if (!date || !slotId || !action) {
+    if (!date || (!slotId && action.startsWith('block') && !action.endsWith('Day')) || !action) {
       return NextResponse.json(
         { success: false, error: 'Missing parameters' },
         { status: 400 }
@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
     } else if (action === 'unblock') {
       await storage.unblockSlot(date, slotId);
       return NextResponse.json({ success: true, message: 'Slot unblocked' });
+    } else if (action === 'blockDay') {
+      await storage.blockDay(date);
+      return NextResponse.json({ success: true, message: 'Day blocked' });
+    } else if (action === 'unblockDay') {
+      await storage.unblockDay(date);
+      return NextResponse.json({ success: true, message: 'Day unblocked' });
     } else {
       return NextResponse.json(
         { success: false, error: 'Invalid action' },

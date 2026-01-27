@@ -109,7 +109,7 @@ That's it! Vercel will auto-deploy.
 ```
 ┌─────────────────────────────────────┐
 │   Next.js Application               │
-│   (Interview Scheduler)             │
+│   (LevelAxis Scheduler)             │
 └──────────────┬──────────────────────┘
                │
                ├── /api/slots (main booking API)

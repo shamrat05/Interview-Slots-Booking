@@ -2,10 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Interview Scheduler | Book Your Slot',
-  description: 'Book your interview slot easily and efficiently. Choose from available time slots and schedule your interview.',
-  keywords: ['interview', 'scheduler', 'booking', 'slot', 'appointment'],
-}
+  title: 'LevelAxis | Interview Scheduler',
+  description: 'Book your interview slot with LevelAxis',
+};
 
 export default function RootLayout({
   children,

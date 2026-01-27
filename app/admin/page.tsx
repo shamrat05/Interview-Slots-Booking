@@ -37,6 +37,7 @@ interface AdminBooking {
   name: string;
   email: string;
   whatsapp: string;
+  joiningPreference: string;
   slotDate: string;
   slotTime: string;
   bookedAt: string;
@@ -288,16 +289,24 @@ export default function AdminPage() {
   useEffect(() => {
     // Check if already authenticated (session storage)
     const storedAuth = sessionStorage.getItem('adminAuthenticated');
-    if (storedAuth === 'true') {
+    const storedSecret = sessionStorage.getItem('adminSecret');
+    if (storedAuth === 'true' && storedSecret) {
       setIsAuthenticated(true);
-      fetchBookings();
-      fetchConfig();
+      setPassword(storedSecret);
+      // We'll call fetchBookings and fetchConfig in a separate effect or after setting password
     }
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated && password) {
+      fetchBookings();
+      fetchConfig();
+    }
+  }, [isAuthenticated, password]);
+
   const fetchConfig = async () => {
     try {
-      const response = await fetch(`/api/admin/config?secret=${encodeURIComponent(password || '')}`);
+      const response = await fetch(`/api/admin/config?secret=${encodeURIComponent(password)}`);
       const data = await response.json();
       if (data.success) {
         setConfig(data.data);
@@ -310,14 +319,13 @@ export default function AdminPage() {
   const fetchBookings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin?secret=${encodeURIComponent(password || '')}`);
+      const response = await fetch(`/api/admin?secret=${encodeURIComponent(password)}`);
       const data = await response.json();
 
       if (data.success) {
         setAdminData(data.data);
       } else {
-        // If password was empty, it might be the initial load with stored auth
-        if (password) setError(data.error || 'Failed to fetch bookings');
+        setError(data.error || 'Failed to fetch bookings');
       }
     } catch {
       setError('Failed to connect to server');
@@ -352,6 +360,7 @@ export default function AdminPage() {
       if (data.success) {
         setIsAuthenticated(true);
         sessionStorage.setItem('adminAuthenticated', 'true');
+        sessionStorage.setItem('adminSecret', password);
         setAdminData(data.data);
         fetchConfig();
       } else {
@@ -449,16 +458,22 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
+    sessionStorage.removeItem('adminSecret');
     setPassword('');
     setAdminData(null);
   };
 
   const sendWhatsAppConfirmation = (booking: AdminBooking) => {
-    const defaultTemplate = 'Hello {name}, your interview is confirmed for {date} at {time}. We look forward to seeing you!';
+    const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. We look forward to seeing you!';
     const template = config?.whatsappTemplate || defaultTemplate;
     
+    // Get day name
+    const dateObj = new Date(booking.slotDate);
+    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+
     const message = template
       .replace('{name}', booking.name)
+      .replace('{day}', dayName)
       .replace('{date}', booking.slotDate)
       .replace('{time}', booking.slotTime);
 
@@ -477,6 +492,7 @@ export default function AdminPage() {
       Name: booking.name,
       Email: booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
+      'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Booked At': new Date(booking.bookedAt).toLocaleString()
@@ -506,6 +522,7 @@ export default function AdminPage() {
       'Name': booking.name,
       'Email': booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
+      'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Booked At': new Date(booking.bookedAt).toLocaleString()
@@ -525,6 +542,7 @@ export default function AdminPage() {
       booking.name.toLowerCase().includes(search) ||
       booking.email.toLowerCase().includes(search) ||
       booking.whatsapp.toLowerCase().includes(search) ||
+      booking.joiningPreference.toLowerCase().includes(search) ||
       booking.slotDate.includes(search)
     );
   }) || [];
@@ -811,6 +829,10 @@ export default function AdminPage() {
                                 <span className="flex items-center gap-1">
                                   <Phone className="w-3.5 h-3.5" />
                                   {booking.whatsapp}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  Join: {booking.joiningPreference}
                                 </span>
                               </div>
                             </div>

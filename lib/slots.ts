@@ -149,6 +149,31 @@ class KVStorage {
     return exists === 1;
   }
 
+  // Day Blocking functionality
+  private getBlockedDayKey(date: string): string {
+    return `blocked_day:${date}`;
+  }
+
+  async blockDay(date: string): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = this.getBlockedDayKey(date);
+    const result = await redis.set(key, '1');
+    return result === 'OK';
+  }
+
+  async unblockDay(date: string): Promise<number> {
+    const redis = await getRedisClient();
+    const key = this.getBlockedDayKey(date);
+    return await redis.del(key);
+  }
+
+  async isDayBlocked(date: string): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = this.getBlockedDayKey(date);
+    const exists = await redis.exists(key);
+    return exists === 1;
+  }
+
   // Dynamic Configuration
   private getConfigKey(): string {
     return 'app:config';
@@ -230,6 +255,15 @@ export function generateSlotId(date: string, startTime: string): string {
   return `${date}:${startTime.replace(':', '-')}`;
 }
 
+export function formatTimeToAMPM(time24: string): string {
+  let [hour, minute] = time24.split(':').map(Number);
+  // Handle 24:00 as midnight AM
+  const period = (hour >= 12 && hour < 24) ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
+}
+
 export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>): Promise<TimeSlot[]> {
   // Fetch dynamic config from Redis first
   const dynamicConfig = await storage.getGlobalConfig();
@@ -237,7 +271,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   // Default configuration (Dynamic > Env > Hardcoded)
   const fullConfig: SlotGenerationConfig = {
     startHour: dynamicConfig.startHour ?? parseInt(process.env.START_HOUR || '9'),
-    endHour: dynamicConfig.endHour ?? parseInt(process.env.END_HOUR || '17'),
+    endHour: dynamicConfig.endHour ?? parseInt(process.env.END_HOUR || '24'),
     slotDurationMinutes: dynamicConfig.slotDurationMinutes ?? parseInt(process.env.SLOT_DURATION_MINUTES || '60'),
     breakDurationMinutes: dynamicConfig.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
     numberOfDays: dynamicConfig.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
@@ -253,6 +287,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   // Prefetch all bookings and blocked slots for the date range
   const datePromises: Promise<Map<string, unknown>>[] = [];
   const blockedPromises: Promise<Set<string>>[] = [];
+  const blockedDayPromises: Promise<boolean>[] = [];
   const dateStrings: string[] = [];
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
@@ -261,23 +296,28 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     dateStrings.push(dateStr);
     datePromises.push(storage.getBookings(dateStr));
     blockedPromises.push(storage.getBlockedSlots(dateStr));
+    blockedDayPromises.push(storage.isDayBlocked(dateStr));
   }
 
   const bookingsPerDay = await Promise.all(datePromises);
   const blockedPerDay = await Promise.all(blockedPromises);
+  const dayBlockedStatuses = await Promise.all(blockedDayPromises);
   
   const bookingsMap = new Map<string, Map<string, unknown>>(); // Date -> (SlotId -> Booking)
   const blockedMap = new Map<string, Set<string>>(); // Date -> Set<SlotId>
+  const dayBlockedMap = new Map<string, boolean>(); // Date -> isBlocked
 
   dateStrings.forEach((dateStr, index) => {
     bookingsMap.set(dateStr, bookingsPerDay[index]);
     blockedMap.set(dateStr, blockedPerDay[index]);
+    dayBlockedMap.set(dateStr, dayBlockedStatuses[index]);
   });
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
     const currentDate = addDays(startDate, dayOffset);
     const dateStr = format(currentDate, 'yyyy-MM-dd');
 
+    const isFullDayBlocked = dayBlockedMap.get(dateStr) || false;
     const dayBookings = bookingsMap.get(dateStr) || new Map();
     const dayBlocked = blockedMap.get(dateStr) || new Set();
 
@@ -303,26 +343,23 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       // Check if slot is booked in storage
       const bookingData = dayBookings.get(slotId);
       const isBooked = !!bookingData;
-      const booking = bookingData as { name: string; email: string; whatsapp: string; bookedAt: string } | undefined;
+      const booking = bookingData as any;
       
       // Check if blocked
-      const isBlocked = dayBlocked.has(slotId);
+      const isBlocked = isFullDayBlocked || dayBlocked.has(slotId);
 
       slots.push({
         id: slotId,
         date: dateStr,
-        startTime,
-        endTime,
-        displayTime: `${startTime} - ${endTime}`,
+        startTime: formatTimeToAMPM(startTime),
+        endTime: formatTimeToAMPM(endTime),
+        displayTime: `${formatTimeToAMPM(startTime)} - ${formatTimeToAMPM(endTime)}`,
         isBooked,
         isBlocked,
         booking: booking ? {
-          id: slotId,
-          name: booking.name,
-          email: booking.email,
-          whatsapp: booking.whatsapp,
-          bookedAt: booking.bookedAt,
-          slotId
+          ...booking,
+          joiningPreference: booking.joiningPreference || 'Not provided',
+          slotTime: `${formatTimeToAMPM(startTime)} - ${formatTimeToAMPM(endTime)}`
         } : undefined
       });
 

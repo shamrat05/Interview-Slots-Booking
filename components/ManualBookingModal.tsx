@@ -30,6 +30,7 @@ export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualB
     name: '',
     email: '',
     whatsapp: '',
+    joiningPreference: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +41,7 @@ export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualB
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.whatsapp.trim()) newErrors.whatsapp = 'WhatsApp is required';
+    if (!formData.joiningPreference.trim()) newErrors.joiningPreference = 'Joining preference is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -127,10 +129,25 @@ export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualB
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                placeholder="email@example.com"
+                placeholder="candidate@levelaxishq.com"
               />
             </div>
             {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Joining Preference</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={formData.joiningPreference}
+                onChange={(e) => setFormData({ ...formData, joiningPreference: e.target.value })}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                placeholder="e.g. Immediately, 15 days notice, etc."
+              />
+            </div>
+            {errors.joiningPreference && <p className="text-xs text-red-500 mt-1">{errors.joiningPreference}</p>}
           </div>
 
           <div>
@@ -142,7 +159,7 @@ export default function ManualBookingModal({ slot, onClose, onSuccess }: ManualB
                 value={formData.whatsapp}
                 onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                placeholder="+1234567890"
+                placeholder="+8801XXXXXXXXX"
               />
             </div>
             {errors.whatsapp && <p className="text-xs text-red-500 mt-1">{errors.whatsapp}</p>}

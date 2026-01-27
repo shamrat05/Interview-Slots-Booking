@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storage } from '@/lib/slots';
+import { storage, formatTimeToAMPM } from '@/lib/slots';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
       name: string;
       email: string;
       whatsapp: string;
+      joiningPreference: string;
       slotDate: string;
       slotTime: string;
       bookedAt: string;
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
           name: string;
           email: string;
           whatsapp: string;
+          joiningPreference: string;
           bookedAt: string;
           date: string;
           startTime: string;
@@ -59,8 +61,9 @@ export async function GET(request: NextRequest) {
           name: booking.name,
           email: booking.email,
           whatsapp: booking.whatsapp,
+          joiningPreference: booking.joiningPreference || 'Not provided',
           slotDate: booking.date,
-          slotTime: `${booking.startTime} - ${booking.endTime}`,
+          slotTime: `${formatTimeToAMPM(booking.startTime)} - ${formatTimeToAMPM(booking.endTime)}`,
           bookedAt: booking.bookedAt
         });
       });
@@ -218,6 +221,7 @@ export async function PATCH(request: NextRequest) {
       name: string;
       email: string;
       whatsapp: string;
+      joiningPreference?: string;
       bookedAt: string;
     };
 
@@ -229,7 +233,8 @@ export async function PATCH(request: NextRequest) {
       startTime: newStartTime,
       endTime: newEndTime,
       rescheduledAt: new Date().toISOString(),
-      originalBookedAt: bookingData.bookedAt
+      originalBookedAt: bookingData.bookedAt,
+      joiningPreference: bookingData.joiningPreference || 'Not provided'
     };
 
     // Set new booking first

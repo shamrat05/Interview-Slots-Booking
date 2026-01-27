@@ -16,6 +16,7 @@ export interface BookingDetails {
   name: string;
   email: string;
   whatsapp: string;
+  joiningPreference: string;
   bookedAt: string;
   slotId: string;
 }
@@ -24,6 +25,7 @@ export interface BookingFormData {
   name: string;
   email: string;
   whatsapp: string;
+  joiningPreference: string;
   slotId: string;
   date: string;
   startTime: string;

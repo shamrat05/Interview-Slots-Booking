@@ -12,7 +12,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
-  Phone
+  Phone,
+  Clock
 } from 'lucide-react';
 
 interface BookingModalProps {
@@ -29,6 +30,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
     name: '',
     email: '',
     whatsapp: '',
+    joiningPreference: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,11 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
       newErrors.email = 'Please enter a valid email address';
     }
 
+    // Joining Preference validation
+    if (!formData.joiningPreference.trim()) {
+      newErrors.joiningPreference = 'This field is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -73,7 +80,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
       } else if (cleanedPhone.length > 15) {
         newErrors.whatsapp = 'Phone number is too long';
       } else if (!phoneRegex.test(cleanedPhone)) {
-        newErrors.whatsapp = 'Please enter a valid phone number (e.g., +1234567890)';
+        newErrors.whatsapp = 'Please enter a valid phone number (e.g., +8801XXXXXXXXX)';
       }
     }
 
@@ -115,6 +122,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
           name: formData.name.trim(),
           email: formData.email.trim(),
           whatsapp: formData.whatsapp.trim(),
+          joiningPreference: formData.joiningPreference.trim(),
           slotId: slot.id,
           date: slot.date,
           startTime: slot.startTime,
@@ -206,7 +214,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="john@example.com"
+                  placeholder="candidate@levelaxishq.com"
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -216,6 +224,31 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
                 <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.email}
+                </p>
+              )}
+            </div>
+
+            {/* Joining Preference Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                When can you join if you get selected? <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.joiningPreference}
+                  onChange={(e) => handleInputChange('joiningPreference', e.target.value)}
+                  placeholder="e.g. Immediately, 15 days notice, etc."
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    errors.joiningPreference ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.joiningPreference && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.joiningPreference}
                 </p>
               )}
             </div>
@@ -259,6 +292,10 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
               <div className="flex justify-between">
                 <span className="text-gray-600">Email:</span>
                 <span className="font-medium text-gray-900">{formData.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Joining:</span>
+                <span className="font-medium text-gray-900">{formData.joiningPreference}</span>
               </div>
             </div>
 
@@ -310,7 +347,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
                   type="tel"
                   value={formData.whatsapp}
                   onChange={(e) => handleInputChange('whatsapp', e.target.value)}
-                  placeholder="+1234567890"
+                  placeholder="+8801XXXXXXXXX"
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.whatsapp ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -323,7 +360,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-gray-500">
-                  Include country code (e.g., +1 for US)
+                  Include country code (e.g., +880 for BD)
                 </p>
               )}
             </div>
@@ -420,7 +457,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
               <button
                 onClick={() => {
                   setStep('details');
-                  setFormData({ name: '', email: '', whatsapp: '' });
+                  setFormData({ name: '', email: '', whatsapp: '', joiningPreference: '' });
                 }}
                 className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
               >

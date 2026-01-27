@@ -28,12 +28,20 @@ export async function GET(request: NextRequest) {
     // Generate all slots with current booking status
     const slots = await generateTimeSlots();
 
+    // Get unique dates and their blocked status
+    const dates = [...new Set(slots.map(s => s.date))];
+    const dayBlockedStatus: Record<string, boolean> = {};
+    await Promise.all(dates.map(async (date) => {
+      dayBlockedStatus[date] = await storage.isDayBlocked(date);
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
         slots,
+        dayBlockedStatus,
         totalSlots: slots.length,
-        availableSlots: slots.filter(s => !s.isBooked).length,
+        availableSlots: slots.filter(s => !s.isBooked && !s.isBlocked).length,
         bookedSlots: slots.filter(s => s.isBooked).length,
       }
     });
@@ -52,10 +60,10 @@ export async function POST(request: NextRequest) {
     storage.initialize();
 
     const body = await request.json();
-    const { name, email, whatsapp, slotId, date, startTime, endTime } = body;
+    const { name, email, whatsapp, joiningPreference, slotId, date, startTime, endTime } = body;
 
     // Validate required fields
-    if (!name || !email || !whatsapp || !slotId || !date || !startTime || !endTime) {
+    if (!name || !email || !whatsapp || !joiningPreference || !slotId || !date || !startTime || !endTime) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -103,6 +111,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       email: email.trim(),
       whatsapp: whatsappResult.formattedNumber!,
+      joiningPreference: joiningPreference.trim(),
       bookedAt: new Date().toISOString(),
       slotId,
       date,

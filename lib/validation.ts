@@ -11,45 +11,95 @@ export function validateName(name: string): boolean {
 }
 
 export function validateWhatsAppNumber(phone: string): WhatsAppValidationResult {
-  const trimmedPhone = phone.trim();
+
+  let trimmedPhone = phone.trim();
+
   
-  // Remove all spaces and dashes
-  const cleanedPhone = trimmedPhone.replace(/[\s-]/g, '');
+
+  // Remove all spaces, dashes, and parentheses
+
+  let cleanedPhone = trimmedPhone.replace(/[\s\-\(\)]/g, '');
+
   
+
+  // Special handling for Bangladesh local format (e.g., 01712345678)
+
+  if (cleanedPhone.length === 11 && cleanedPhone.startsWith('01')) {
+
+    cleanedPhone = '88' + cleanedPhone;
+
+  }
+
+  
+
   // Check for valid WhatsApp number formats
+
   // Supports: +1234567890, 1234567890, 001234567890 (with country code)
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+
+  const phoneRegex = /^\+?[1-9]\d{7,14}$/;
+
   
+
   if (cleanedPhone.length < 10) {
+
     return {
+
       isValid: false,
+
       error: 'Phone number must be at least 10 digits'
+
     };
+
   }
+
   
+
   if (cleanedPhone.length > 15) {
+
     return {
+
       isValid: false,
+
       error: 'Phone number is too long (max 15 digits)'
+
     };
+
   }
+
   
+
   if (!phoneRegex.test(cleanedPhone)) {
+
     return {
+
       isValid: false,
-      error: 'Please enter a valid phone number (e.g., +1234567890)'
+
+      error: 'Please enter a valid phone number (e.g., +8801XXXXXXXXX)'
+
     };
+
   }
+
   
-  // Format the number consistently
+
+  // Format the number consistently with a '+' prefix
+
   const formattedNumber = cleanedPhone.startsWith('+') 
+
     ? cleanedPhone 
+
     : `+${cleanedPhone}`;
+
   
+
   return {
+
     isValid: true,
+
     formattedNumber
+
   };
+
 }
 
 export function validateBookingForm(

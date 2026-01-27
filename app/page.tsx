@@ -137,7 +137,7 @@ export default function Home() {
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Interview Scheduler</h1>
+                <h1 className="text-xl font-bold text-gray-900">LevelAxis Interview Scheduler</h1>
                 <p className="text-sm text-gray-500">Book your interview slot</p>
               </div>
             </div>
@@ -249,7 +249,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-200 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-gray-500">
-          <p>Need help? Contact us at support@example.com</p>
+          <p>© {new Date().getFullYear()} LevelAxis. All rights reserved.</p>
+          <p className="mt-1">Need help? Contact us at shamrat@levelaxishq.com</p>
         </div>
       </footer>
 

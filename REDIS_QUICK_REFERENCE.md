@@ -1,4 +1,4 @@
-# 🚀 Redis Quick Reference - Interview Scheduler
+# 🚀 Redis Quick Reference - LevelAxis Scheduler
 
 ## 📦 What's Installed
 

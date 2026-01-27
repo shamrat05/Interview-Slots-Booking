@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
     // Return combined config (Dynamic + Defaults from env)
     const fullConfig = {
       startHour: config.startHour ?? parseInt(process.env.START_HOUR || '9'),
-      endHour: config.endHour ?? parseInt(process.env.END_HOUR || '17'),
+      endHour: config.endHour ?? parseInt(process.env.END_HOUR || '24'),
       slotDurationMinutes: config.slotDurationMinutes ?? parseInt(process.env.SLOT_DURATION_MINUTES || '60'),
       breakDurationMinutes: config.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
       numberOfDays: config.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
-      whatsappTemplate: config.whatsappTemplate ?? 'Hello {name}, your interview is confirmed for {date} at {time}. We look forward to seeing you!',
+      whatsappTemplate: config.whatsappTemplate ?? 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. We look forward to seeing you!',
     };
 
     return NextResponse.json({ success: true, data: fullConfig });

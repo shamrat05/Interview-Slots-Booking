@@ -191,7 +191,7 @@ export default function ConfigManager({ adminSecret }: ConfigManagerProps) {
                 placeholder="Hello {name}, your interview is at {time}..."
               />
               <p className="text-[10px] text-gray-400 mt-1">
-                Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{date}`}</span>, <span className="font-mono text-primary-600">{`{time}`}</span>
+                Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{day}`}</span>, <span className="font-mono text-primary-600">{`{date}`}</span>, <span className="font-mono text-primary-600">{`{time}`}</span>
               </p>
             </div>
           </div>

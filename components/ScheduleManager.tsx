@@ -36,9 +36,11 @@ interface ScheduleManagerProps {
 export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
   const [selectedDate, setSelectedDate] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [dayBlockedStatus, setDayBlockedStatus] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isProcessingDay, setIsProcessingDay] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSlotForManual, setSelectedSlotForManual] = useState<Slot | null>(null);
 
@@ -65,6 +67,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
       if (data.success) {
         const filtered = data.data.slots.filter((s: Slot) => s.date === selectedDate);
         setSlots(filtered);
+        setDayBlockedStatus(data.data.dayBlockedStatus || {});
       } else {
         setError(data.error || 'Failed to fetch slots');
       }
@@ -72,6 +75,39 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
       setError('Connection error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleDayBlock = async () => {
+    setIsProcessingDay(true);
+    const isCurrentlyBlocked = dayBlockedStatus[selectedDate];
+    const action = isCurrentlyBlocked ? 'unblockDay' : 'blockDay';
+
+    try {
+      const response = await fetch(`/api/admin/block-slot?secret=${encodeURIComponent(adminSecret)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: selectedDate,
+          action
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setDayBlockedStatus({
+          ...dayBlockedStatus,
+          [selectedDate]: !isCurrentlyBlocked
+        });
+        // Refresh slots to show visual change
+        fetchSlots();
+      } else {
+        alert(data.error || 'Failed to update day status');
+      }
+    } catch (err) {
+      alert('Connection error');
+    } finally {
+      setIsProcessingDay(false);
     }
   };
 
@@ -127,6 +163,30 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
           </div>
           
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+            <button
+              onClick={toggleDayBlock}
+              disabled={isProcessingDay}
+              className={`px-4 py-2 text-sm font-bold rounded-lg border transition-all flex items-center gap-2 ${
+                dayBlockedStatus[selectedDate]
+                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+                  : 'bg-white text-red-600 border-red-200 hover:bg-red-50'
+              }`}
+            >
+              {isProcessingDay ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : dayBlockedStatus[selectedDate] ? (
+                <>
+                  <Unlock className="w-4 h-4" />
+                  Unblock Entire Day
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  Block Entire Day
+                </>
+              )}
+            </button>
+            <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
             {dateOptions.slice(0, 5).map((option) => (
               <button
                 key={option.value}
@@ -156,6 +216,15 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
       </div>
 
       <div className="p-6">
+        {dayBlockedStatus[selectedDate] && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-bold">This day is fully blocked.</p>
+              <p className="text-sm">No slots are visible to applicants for this date.</p>
+            </div>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-4" />
