@@ -165,6 +165,120 @@ interface RescheduleDialogProps {
   onCancel: () => void;
 }
 
+function EditBookingModal({ 
+  isOpen, 
+  booking, 
+  onConfirm, 
+  onCancel 
+}: { 
+  isOpen: boolean; 
+  booking: AdminBooking | null; 
+  onConfirm: (data: Partial<AdminBooking>) => Promise<void>; 
+  onCancel: () => void; 
+}) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    whatsapp: '',
+    joiningPreference: ''
+  });
+  const [confirmText, setConfirmText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (booking) {
+      setFormData({
+        name: booking.name,
+        email: booking.email,
+        whatsapp: booking.whatsapp,
+        joiningPreference: booking.joiningPreference
+      });
+      setConfirmText('');
+    }
+  }, [booking]);
+
+  if (!isOpen || !booking) return null;
+
+  const handleSave = async () => {
+    if (confirmText !== 'CONFIRM') return;
+    setIsProcessing(true);
+    await onConfirm(formData);
+    setIsProcessing(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Edit Applicant Info</h3>
+          <button onClick={onCancel} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">WhatsApp</label>
+            <input
+              type="text"
+              value={formData.whatsapp}
+              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Joining Preference</label>
+            <input
+              type="text"
+              value={formData.joiningPreference}
+              onChange={(e) => setFormData({ ...formData, joiningPreference: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="mb-6 p-3 bg-amber-50 rounded-lg border border-amber-100">
+          <label className="block text-[10px] font-bold text-amber-700 uppercase mb-2">Type <span className="text-red-600">CONFIRM</span> to save changes</label>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="CONFIRM"
+            className="w-full px-4 py-2 border border-amber-200 rounded-lg text-sm font-mono"
+          />
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-bold">Cancel</button>
+          <button
+            onClick={handleSave}
+            disabled={confirmText !== 'CONFIRM' || isProcessing}
+            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold disabled:opacity-50"
+          >
+            {isProcessing ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel }: RescheduleDialogProps) {
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -318,6 +432,8 @@ export default function AdminPage() {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [bookingToReschedule, setBookingToReschedule] = useState<AdminBooking | null>(null);
   const [availableSlots, setAvailableSlots] = useState<Array<any>>([]);
+  const [bookingToEdit, setBookingToEdit] = useState<AdminBooking | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
 
@@ -622,6 +738,45 @@ export default function AdminPage() {
         });
       } else {
         alert(data.error || 'Failed to save manual link');
+      }
+    } catch {
+      alert('Failed to connect to server');
+    }
+  };
+
+  const handleEditConfirm = async (updatedData: Partial<AdminBooking>) => {
+    if (!bookingToEdit) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update-details',
+            date: bookingToEdit.slotDate,
+            slotId: bookingToEdit.slotId,
+            ...updatedData
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setAdminData(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            bookings: prev.bookings.map(b => 
+              b.id === bookingToEdit.id ? { ...b, ...updatedData } : b
+            )
+          };
+        });
+        setShowEditModal(false);
+        setBookingToEdit(null);
+      } else {
+        alert(data.error || 'Failed to update details');
       }
     } catch {
       alert('Failed to connect to server');
@@ -1122,6 +1277,16 @@ export default function AdminPage() {
                             
                             <div className="flex items-center gap-1">
                               <button
+                                onClick={() => {
+                                  setBookingToEdit(booking);
+                                  setShowEditModal(true);
+                                }}
+                                className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
+                                title="Edit Info"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => handleRescheduleClick(booking)}
                                 className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                                 title="Reschedule"
@@ -1180,6 +1345,17 @@ export default function AdminPage() {
         onCancel={() => {
           setShowRescheduleDialog(false);
           setBookingToReschedule(null);
+        }}
+      />
+
+      {/* Edit Booking Modal */}
+      <EditBookingModal
+        isOpen={showEditModal}
+        booking={bookingToEdit}
+        onConfirm={handleEditConfirm}
+        onCancel={() => {
+          setShowEditModal(false);
+          setBookingToEdit(null);
         }}
       />
 

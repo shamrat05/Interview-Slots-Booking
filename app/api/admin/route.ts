@@ -463,6 +463,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, meetLink: manualLink });
     }
 
+    if (action === 'update-details') {
+      const { name, email, whatsapp, joiningPreference } = body;
+      
+      const booking = await storage.getBooking(date, slotId);
+      if (!booking) return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
+
+      const updatedBooking = {
+        ...(booking as any),
+        name: name.trim(),
+        email: email.trim(),
+        whatsapp: whatsapp.trim(),
+        joiningPreference: joiningPreference.trim()
+      };
+      
+      await storage.updateBooking(date, slotId, updatedBooking);
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ success: false, error: 'Invalid action' });
   } catch (error) {
     console.error('Error in admin POST action:', error);
