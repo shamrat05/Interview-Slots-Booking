@@ -256,6 +256,34 @@ export function generateSlotId(date: string, startTime: string): string {
   return `${date}:${startTime.replace(':', '-')}`;
 }
 
+// Helper to get Bangladesh time (UTC+6) components
+export function getBangladeshNow() {
+  const now = new Date();
+  // getTime() is always UTC
+  const bdDate = new Date(now.getTime() + (3600000 * 6));
+  return {
+    hours: bdDate.getUTCHours(),
+    minutes: bdDate.getUTCMinutes(),
+    year: bdDate.getUTCFullYear(),
+    month: bdDate.getUTCMonth(),
+    day: bdDate.getUTCDate(),
+    dateStr: `${bdDate.getUTCFullYear()}-${(bdDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${bdDate.getUTCDate().toString().padStart(2, '0')}`,
+    fullDate: bdDate
+  };
+}
+
+export function isPastSlot(dateStr: string, startTime: string): boolean {
+  const bdNow = getBangladeshNow();
+  if (dateStr < bdNow.dateStr) return true;
+  if (dateStr > bdNow.dateStr) return false;
+  
+  const [h, m] = startTime.split(':').map(Number);
+  const slotMinutes = h * 60 + m;
+  const currentMinutes = bdNow.hours * 60 + bdNow.minutes;
+  
+  return slotMinutes <= currentMinutes;
+}
+
 export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>): Promise<TimeSlot[]> {
   // Fetch dynamic config from Redis first
   const dynamicConfig = await storage.getGlobalConfig();
@@ -271,10 +299,11 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   };
 
   const slots: TimeSlot[] = [];
-  const today = startOfDay(new Date());
+  const bdNow = getBangladeshNow();
+  const todayStr = bdNow.dateStr;
 
-  // Start from tomorrow
-  const startDate = addDays(today, 1);
+  // Start from today
+  const startDate = new Date(Date.UTC(bdNow.year, bdNow.month, bdNow.day));
 
   // Prefetch all bookings and blocked slots for the date range
   const datePromises: Promise<Map<string, unknown>>[] = [];
@@ -283,8 +312,8 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   const dateStrings: string[] = [];
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
-    const currentDate = addDays(startDate, dayOffset);
-    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const currentDate = new Date(startDate.getTime() + (dayOffset * 86400000));
+    const dateStr = `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${currentDate.getUTCDate().toString().padStart(2, '0')}`;
     dateStrings.push(dateStr);
     datePromises.push(storage.getBookings(dateStr));
     blockedPromises.push(storage.getBlockedSlots(dateStr));
@@ -306,8 +335,8 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   });
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
-    const currentDate = addDays(startDate, dayOffset);
-    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const currentDate = new Date(startDate.getTime() + (dayOffset * 86400000));
+    const dateStr = `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${currentDate.getUTCDate().toString().padStart(2, '0')}`;
 
     const isFullDayBlocked = dayBlockedMap.get(dateStr) || false;
     const dayBookings = bookingsMap.get(dateStr) || new Map();
@@ -323,6 +352,15 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       const startH = Math.floor(currentMinutes / 60);
       const startM = currentMinutes % 60;
       const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
+
+      // Check if slot is in the past
+      let isPast = false;
+      if (dateStr === todayStr) {
+        const currentTotalMinutes = (bdNow.hours * 60) + bdNow.minutes;
+        if (currentMinutes <= currentTotalMinutes) {
+          isPast = true;
+        }
+      }
 
       // Calculate end time
       const slotEndMinutes = currentMinutes + fullConfig.slotDurationMinutes;
@@ -348,6 +386,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
         displayTime: `${formatTimeToAMPM(startTime)} - ${formatTimeToAMPM(endTime)}`,
         isBooked,
         isBlocked,
+        isPast,
         booking: booking ? {
           ...booking,
           joiningPreference: booking.joiningPreference || 'Not provided',
@@ -369,12 +408,13 @@ export function formatDateDisplay(dateStr: string): string {
 }
 
 export function getAvailableDates(): string[] {
-  const today = startOfDay(new Date());
+  const bdNow = getBangladeshNow();
   const numberOfDays = parseInt(process.env.BOOKING_DAYS || '3');
   const dates: string[] = [];
 
-  for (let i = 1; i <= numberOfDays; i++) {
-    dates.push(format(addDays(today, i), 'yyyy-MM-dd'));
+  for (let i = 0; i < numberOfDays; i++) {
+    const d = new Date(Date.UTC(bdNow.year, bdNow.month, bdNow.day + i));
+    dates.push(`${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`);
   }
 
   return dates;

@@ -55,10 +55,17 @@ export default function Home() {
   const getDatesForDisplay = () => {
     // Only show dates that have at least one slot (even if booked, for UI consistency)
     const dates = [...new Set(slots.map(s => s.date))];
+    
+    // Get today's date string in Bangladesh timezone
+    const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+    const todayStr = format(bdNow, 'yyyy-MM-dd');
+    const tomorrowStr = format(new Date(bdNow.getTime() + 86400000), 'yyyy-MM-dd');
+
     return dates.map(date => ({
       date,
       displayName: format(new Date(date), 'EEE, MMM d'),
-      isToday: false
+      isToday: date === todayStr,
+      isTomorrow: date === tomorrowStr
     }));
   };
 
@@ -68,7 +75,7 @@ export default function Home() {
   };
 
   const handleSlotClick = (slot: TimeSlot) => {
-    if (slot.isBooked) return;
+    if (slot.isBooked || slot.isPast) return;
     setSelectedSlot(slot);
     setShowBookingModal(true);
   };
@@ -165,7 +172,10 @@ export default function Home() {
                   }`}
                 >
                   {dateInfo.displayName}
-                  {index === 0 && (
+                  {dateInfo.isToday && (
+                    <span className="block text-xs opacity-75 mt-0.5">Today</span>
+                  )}
+                  {dateInfo.isTomorrow && !dateInfo.isToday && (
                     <span className="block text-xs opacity-75 mt-0.5">Tomorrow</span>
                   )}
                 </button>
@@ -186,19 +196,21 @@ export default function Home() {
                 <button
                   key={slot.id}
                   onClick={() => handleSlotClick(slot)}
-                  disabled={slot.isBooked}
+                  disabled={slot.isBooked || slot.isPast}
                   className={`p-4 rounded-lg border-2 font-medium transition-all ${
-                    slot.isBooked
+                    slot.isBooked || slot.isPast
                       ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                       : 'bg-white border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 hover:shadow-md cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Clock className={`w-4 h-4 ${slot.isBooked ? 'text-gray-400' : 'text-primary-500'}`} />
+                    <Clock className={`w-4 h-4 ${slot.isBooked || slot.isPast ? 'text-gray-400' : 'text-primary-500'}`} />
                     <span>{slot.startTime}</span>
                   </div>
-                  {slot.isBooked && (
-                    <div className="mt-2 text-xs text-gray-400">Booked</div>
+                  {(slot.isBooked || slot.isPast) && (
+                    <div className="mt-2 text-xs text-gray-400">
+                      {slot.isBooked ? 'Booked' : 'Passed'}
+                    </div>
                   )}
                 </button>
               ))}

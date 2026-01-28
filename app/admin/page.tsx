@@ -793,7 +793,11 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {adminData?.bookings.filter(b => new Date(b.slotDate) >= new Date()).length || 0}
+                      {adminData?.bookings.filter(b => {
+                        const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+                        const todayStr = bdNow.toISOString().split('T')[0];
+                        return b.slotDate >= todayStr;
+                      }).length || 0}
                     </p>
                     <p className="text-sm text-gray-500">Upcoming</p>
                   </div>

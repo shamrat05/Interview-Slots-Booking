@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storage, generateTimeSlots } from '@/lib/slots';
+import { storage, generateTimeSlots, isPastSlot } from '@/lib/slots';
 import { validateBookingForm, validateWhatsAppNumber, generateBookingId } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
@@ -98,6 +98,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'This slot has already been booked.' },
         { status: 409 }
+      );
+    }
+
+    // Server-side time validation
+    if (isPastSlot(date, startTime)) {
+      return NextResponse.json(
+        { success: false, error: 'This slot time has already passed.' },
+        { status: 400 }
       );
     }
 

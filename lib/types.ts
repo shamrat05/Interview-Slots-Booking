@@ -8,6 +8,7 @@ export interface TimeSlot {
   displayTime: string;
   isBooked: boolean;
   isBlocked?: boolean;
+  isPast?: boolean;
   booking?: BookingDetails;
 }
 

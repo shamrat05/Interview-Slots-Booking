@@ -27,6 +27,7 @@ interface Slot {
   displayTime: string;
   isBooked: boolean;
   isBlocked?: boolean;
+  isPast?: boolean;
   booking?: any;
 }
 
@@ -35,7 +36,9 @@ interface ScheduleManagerProps {
 }
 
 export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
-  const [selectedDate, setSelectedDate] = useState<string>(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
+  // Get current time in Bangladesh
+  const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+  const [selectedDate, setSelectedDate] = useState<string>(format(bdNow, 'yyyy-MM-dd'));
   const [slots, setSlots] = useState<Slot[]>([]);
   const [dayBlockedStatus, setDayBlockedStatus] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -45,9 +48,9 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSlotForManual, setSelectedSlotForManual] = useState<Slot | null>(null);
 
-  // Generate date options (next 14 days)
+  // Generate date options (next 14 days) including today
   const dateOptions = Array.from({ length: 14 }, (_, i) => {
-    const d = addDays(new Date(), i + 1);
+    const d = addDays(bdNow, i);
     return {
       value: format(d, 'yyyy-MM-dd'),
       label: format(d, 'EEE, MMM d'),
@@ -254,7 +257,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {slots.map((slot) => {
-              const status = slot.isBooked ? 'booked' : slot.isBlocked ? 'blocked' : 'available';
+              const status = slot.isBooked ? 'booked' : slot.isPast ? 'passed' : slot.isBlocked ? 'blocked' : 'available';
               
               return (
                 <div 
@@ -262,6 +265,8 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col justify-between h-32 ${
                     status === 'booked'
                       ? 'bg-blue-50 border-blue-100 opacity-80'
+                      : status === 'passed'
+                      ? 'bg-gray-100 border-gray-200 opacity-60'
                       : status === 'blocked'
                       ? 'bg-gray-50 border-gray-200 border-dashed'
                       : 'bg-white border-gray-100 hover:border-primary-200 hover:shadow-md'
@@ -280,6 +285,8 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                     <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                       status === 'booked' 
                         ? 'bg-blue-100 text-blue-700' 
+                        : status === 'passed'
+                        ? 'bg-gray-200 text-gray-600'
                         : status === 'blocked'
                         ? 'bg-gray-200 text-gray-600'
                         : 'bg-green-100 text-green-700'
@@ -292,6 +299,10 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                                       {status === 'booked' ? (
                                         <div className="text-xs text-blue-700 font-medium truncate">
                                            User: {slot.booking?.name || 'Booked'}
+                                        </div>
+                                      ) : status === 'passed' ? (
+                                        <div className="text-xs text-gray-500 italic">
+                                          Time passed
                                         </div>
                                       ) : (
                                         <div className="grid grid-cols-2 gap-2">
