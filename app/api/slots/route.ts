@@ -129,15 +129,19 @@ export async function POST(request: NextRequest) {
 
     // Try to create Google Calendar event if configured
     let meetLink = '';
+    let googleEventId = '';
     try {
-      const googleLink = await createCalendarEvent({
+      const googleResult = await createCalendarEvent({
         name: name.trim(),
         email: email.trim(),
         date,
         startTime,
         endTime
       });
-      if (googleLink) meetLink = googleLink;
+      if (googleResult && googleResult.meetLink) {
+        meetLink = googleResult.meetLink;
+        googleEventId = googleResult.eventId || '';
+      }
     } catch (err) {
       console.error('Failed to create google meet:', err);
       // Don't fail the whole booking if just calendar fails
@@ -154,6 +158,7 @@ export async function POST(request: NextRequest) {
       bookedAt: new Date().toISOString(),
       whatsappSent: false,
       meetLink,
+      googleEventId,
       slotId,
       date,
       startTime,

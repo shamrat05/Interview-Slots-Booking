@@ -22,6 +22,7 @@ export interface BookingDetails {
   slotId: string;
   whatsappSent?: boolean;
   meetLink?: string;
+  googleEventId?: string;
 }
 
 export interface BookingFormData {
@@ -45,6 +46,7 @@ export interface AdminUser {
   bookedAt: string;
   whatsappSent?: boolean;
   meetLink?: string;
+  googleEventId?: string;
 }
 
 export interface ApiResponse<T = unknown> {

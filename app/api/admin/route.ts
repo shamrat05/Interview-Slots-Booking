@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storage } from '@/lib/slots';
 import { formatTimeToAMPM } from '@/lib/utils';
+import { createCalendarEvent, deleteCalendarEvent } from '@/lib/google-calendar';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
       bookedAt: string;
       whatsappSent: boolean;
       meetLink: string;
+      googleEventId: string;
       _rawStartTime: string;
     }> = [];
 
@@ -78,7 +80,8 @@ export async function GET(request: NextRequest) {
           slotEndTime: rawEndTime,
           bookedAt: booking.bookedAt,
           whatsappSent: !!booking.whatsappSent,
-          meetLink: booking.meetLink || ''
+          meetLink: booking.meetLink || '',
+          googleEventId: booking.googleEventId || ''
         });
       });
     });
@@ -147,11 +150,22 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if booking exists
-    if (!await storage.isSlotBooked(date, slotId)) {
+    const booking = await storage.getBooking(date, slotId);
+    if (!booking) {
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
+    }
+
+    // Delete Google Calendar event if exists
+    const bookingData = booking as any;
+    if (bookingData.googleEventId) {
+      try {
+        await deleteCalendarEvent(bookingData.googleEventId);
+      } catch (err) {
+        console.error('Failed to delete Google Calendar event:', err);
+      }
     }
 
     // Delete the booking
@@ -230,14 +244,42 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Create new booking with updated slot information
     const bookingData = oldBooking as {
       name: string;
       email: string;
       whatsapp: string;
       joiningPreference?: string;
       bookedAt: string;
+      googleEventId?: string;
     };
+
+    // Delete old calendar event if exists
+    if (bookingData.googleEventId) {
+      try {
+        await deleteCalendarEvent(bookingData.googleEventId);
+      } catch (err) {
+        console.error('Failed to delete old Google Calendar event:', err);
+      }
+    }
+
+    // Create new calendar event
+    let meetLink = '';
+    let googleEventId = '';
+    try {
+      const googleResult = await createCalendarEvent({
+        name: bookingData.name,
+        email: bookingData.email,
+        date: newDate,
+        startTime: newStartTime,
+        endTime: newEndTime
+      });
+      if (googleResult && googleResult.meetLink) {
+        meetLink = googleResult.meetLink;
+        googleEventId = googleResult.eventId || '';
+      }
+    } catch (err) {
+      console.error('Failed to create new Google Meet for reschedule:', err);
+    }
 
     const newBookingData = {
       ...bookingData,
@@ -248,7 +290,9 @@ export async function PATCH(request: NextRequest) {
       endTime: newEndTime,
       rescheduledAt: new Date().toISOString(),
       originalBookedAt: bookingData.bookedAt,
-      joiningPreference: bookingData.joiningPreference || 'Not provided'
+      joiningPreference: bookingData.joiningPreference || 'Not provided',
+      meetLink,
+      googleEventId
     };
 
     // Set new booking first
@@ -351,5 +395,59 @@ export async function PUT(request: NextRequest) {
       { success: false, error: 'Failed to update booking' },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    storage.initialize();
+
+    // Check for admin authentication
+    const searchParams = request.nextUrl.searchParams;
+    const adminSecret = searchParams.get('secret');
+
+    if (!adminSecret) {
+      return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+
+    const storedPassword = storage.getAdminPassword();
+    if (adminSecret !== storedPassword) {
+      return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { action, date, slotId } = body;
+
+    if (action === 'generate-meet') {
+      const booking = await storage.getBooking(date, slotId);
+      if (!booking) return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
+
+      const bookingData = booking as any;
+      
+      // Create new event
+      const googleResult = await createCalendarEvent({
+        name: bookingData.name,
+        email: bookingData.email,
+        date: bookingData.date,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime
+      });
+
+      if (googleResult && googleResult.meetLink) {
+        const updatedBooking = {
+          ...bookingData,
+          meetLink: googleResult.meetLink,
+          googleEventId: googleResult.eventId
+        };
+        await storage.updateBooking(date, slotId, updatedBooking);
+        return NextResponse.json({ success: true, meetLink: googleResult.meetLink });
+      }
+      return NextResponse.json({ success: false, error: 'Failed to generate link' });
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid action' });
+  } catch (error) {
+    console.error('Error in admin POST action:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

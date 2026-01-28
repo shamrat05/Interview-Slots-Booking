@@ -61,9 +61,31 @@ export async function createCalendarEvent(booking: {
       conferenceDataVersion: 1,
     });
 
-    return response.data.hangoutLink || null;
+    return {
+      meetLink: response.data.hangoutLink || null,
+      eventId: response.data.id || null
+    };
   } catch (error) {
     console.error('Error creating Google Calendar event:', error);
     return null;
+  }
+}
+
+export async function deleteCalendarEvent(eventId: string) {
+  const refreshToken = await storage.getGoogleToken();
+  if (!refreshToken || !eventId) return false;
+
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  try {
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId: eventId,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error deleting Google Calendar event:', error);
+    return false;
   }
 }

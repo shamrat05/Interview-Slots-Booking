@@ -553,6 +553,41 @@ export default function AdminPage() {
     }
   };
 
+  const generateMeetLink = async (booking: AdminBooking) => {
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate-meet',
+            date: booking.slotDate,
+            slotId: booking.slotId
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Optimistic update
+        setAdminData(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            bookings: prev.bookings.map(b => 
+              b.id === booking.id ? { ...b, meetLink: data.meetLink } : b
+            )
+          };
+        });
+      } else {
+        alert(data.error || 'Failed to generate Meet link');
+      }
+    } catch {
+      alert('Failed to connect to server');
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
@@ -981,6 +1016,16 @@ export default function AdminPage() {
                                     <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                     Join Meet
                                   </a>
+                                )}
+                                {!booking.meetLink && (
+                                  <button
+                                    onClick={() => generateMeetLink(booking)}
+                                    className="flex items-center gap-1 text-amber-600 font-bold hover:underline"
+                                    title="Generate Google Meet Link"
+                                  >
+                                    <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                    Gen Link
+                                  </button>
                                 )}
                               </div>
                               <div className="mt-1 flex items-center gap-1 text-[9px] md:text-[10px] text-gray-400">
