@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       slotEndTime: string;
       bookedAt: string;
       whatsappSent: boolean;
+      meetLink: string;
       _rawStartTime: string;
     }> = [];
 
@@ -76,7 +77,8 @@ export async function GET(request: NextRequest) {
               : 'N/A',
           slotEndTime: rawEndTime,
           bookedAt: booking.bookedAt,
-          whatsappSent: !!booking.whatsappSent
+          whatsappSent: !!booking.whatsappSent,
+          meetLink: booking.meetLink || ''
         });
       });
     });
