@@ -14,7 +14,15 @@ import { TimeSlot } from '@/lib/types';
 import { isPastSlotEnd } from '@/lib/utils';
 
 const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
-  const hour = parseInt(time.split(':')[0], 10) % 12 || 12;
+  const parts = time.split(':');
+  let hour = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  
+  // Round to nearest hour for the icon
+  if (minutes >= 30) hour += 1;
+  
+  hour = hour % 12 || 12;
+  
   const icons: Record<number, any> = {
     1: Clock1, 2: Clock2, 3: Clock3, 4: Clock4, 5: Clock5, 6: Clock6,
     7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12

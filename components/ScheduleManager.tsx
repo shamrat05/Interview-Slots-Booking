@@ -22,7 +22,15 @@ import { formatTimeToAMPM } from '@/lib/utils';
 import ManualBookingModal from './ManualBookingModal';
 
 const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
-  const hour = parseInt(time.split(':')[0], 10) % 12 || 12;
+  const parts = time.split(':');
+  let hour = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  
+  // Round to nearest hour for the icon
+  if (minutes >= 30) hour += 1;
+  
+  hour = hour % 12 || 12;
+  
   const icons: Record<number, any> = {
     1: Clock1, 2: Clock2, 3: Clock3, 4: Clock4, 5: Clock5, 6: Clock6,
     7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12
@@ -182,44 +190,44 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
             <button
               onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
-              className={`px-4 py-2 text-sm font-bold rounded-lg border transition-all flex items-center gap-2 whitespace-nowrap ${
+              className={`h-9 px-3 text-xs font-bold rounded-lg border transition-all flex items-center gap-2 whitespace-nowrap ${
                 showOnlyAvailable
                   ? 'bg-primary-50 text-primary-700 border-primary-200'
                   : 'bg-white text-gray-600 border-gray-200'
               }`}
             >
-              {showOnlyAvailable ? 'Showing Available' : 'Showing All Slots'}
+              {showOnlyAvailable ? 'Available Only' : 'All Slots'}
             </button>
-            <div className="h-8 w-px bg-gray-200 mx-1 hidden md:block"></div>
+            <div className="h-6 w-px bg-gray-200 mx-1 hidden md:block"></div>
             <button
               onClick={toggleDayBlock}
               disabled={isProcessingDay}
-              className={`px-4 py-2 text-sm font-bold rounded-lg border transition-all flex items-center gap-2 ${
+              className={`h-9 px-3 text-xs font-bold rounded-lg border transition-all flex items-center gap-2 whitespace-nowrap ${
                 dayBlockedStatus[selectedDate]
                   ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                   : 'bg-white text-red-600 border-red-200 hover:bg-red-50'
               }`}
             >
               {isProcessingDay ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : dayBlockedStatus[selectedDate] ? (
                 <>
-                  <Unlock className="w-4 h-4" />
-                  Unblock Entire Day
+                  <Unlock className="w-3.5 h-3.5" />
+                  Unblock Day
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
-                  Block Entire Day
+                  <Lock className="w-3.5 h-3.5" />
+                  Block Day
                 </>
               )}
             </button>
-            <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
+            <div className="h-6 w-px bg-gray-200 mx-1 hidden md:block"></div>
             {dateOptions.slice(0, 5).map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleDateChange(option.value)}
-                className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all whitespace-nowrap ${
+                className={`h-9 px-3 text-xs font-medium rounded-lg border transition-all whitespace-nowrap ${
                   selectedDate === option.value
                     ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300'
@@ -232,7 +240,8 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                <select 
                 value={selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
-                className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-700 focus:ring-2 focus:ring-primary-500 outline-none"
+                className="h-9 pl-3 pr-8 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-700 focus:ring-2 focus:ring-primary-500 outline-none appearance-none"
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem' }}
                >
                  {dateOptions.map(option => (
                    <option key={option.value} value={option.value}>{option.label}</option>
