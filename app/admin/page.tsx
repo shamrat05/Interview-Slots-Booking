@@ -45,6 +45,7 @@ interface AdminBooking {
   slotEndTime: string;
   bookedAt: string;
   whatsappSent?: boolean;
+  meetLink?: string;
 }
 
 interface AdminData {
@@ -594,6 +595,7 @@ export default function AdminPage() {
       'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
+      'Meet Link': booking.meetLink || '',
       'Booked At': new Date(booking.bookedAt).toLocaleString()
     }));
 
@@ -625,6 +627,7 @@ export default function AdminPage() {
       'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
+      'Meet Link': booking.meetLink || '',
       'Booked At': new Date(booking.bookedAt).toLocaleString()
     }));
 
