@@ -7,7 +7,7 @@ import {
   Clock, 
   Clock1, Clock2, Clock3, Clock4, Clock5, Clock6, 
   Clock7, Clock8, Clock9, Clock10, Clock11, Clock12,
-  ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2 
+  ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2, Lock 
 } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 import { TimeSlot } from '@/lib/types';
