@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Calendar, Clock, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 import { TimeSlot } from '@/lib/types';
+import { isPastSlotEnd } from '@/lib/utils';
 
 export default function Home() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -34,12 +35,13 @@ export default function Home() {
           setConfig(data.data.config);
         }
         
-        const available = allSlots.filter((s: TimeSlot) => !s.isBooked && !s.isBlocked);
+        const available = allSlots.filter((s: TimeSlot) => !s.isBooked && !s.isBlocked && !s.isPast);
         
         if (available.length > 0) {
           const firstAvailableDate = available[0].date;
           setSelectedDate(firstAvailableDate);
         } else if (allSlots.length > 0) {
+          // If no available slots, still set a date but UI will show "No slots available"
           setSelectedDate(allSlots[0].date);
         }
       } else {
@@ -53,15 +55,19 @@ export default function Home() {
   };
 
   const getDatesForDisplay = () => {
-    // Only show dates that have at least one slot (even if booked, for UI consistency)
-    const dates = [...new Set(slots.map(s => s.date))];
+    // Only show dates that have at least one AVAILABLE slot
+    const datesWithAvailableSlots = [...new Set(
+      slots
+        .filter(s => !s.isBooked && !s.isBlocked && !s.isPast)
+        .map(s => s.date)
+    )];
     
     // Get today's date string in Bangladesh timezone
     const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
     const todayStr = format(bdNow, 'yyyy-MM-dd');
     const tomorrowStr = format(new Date(bdNow.getTime() + 86400000), 'yyyy-MM-dd');
 
-    return dates.map(date => ({
+    return datesWithAvailableSlots.map(date => ({
       date,
       displayName: format(new Date(date), 'EEE, MMM d'),
       isToday: date === todayStr,
@@ -70,8 +76,13 @@ export default function Home() {
   };
 
   const getSlotsForSelectedDate = () => {
-    // Return slots for date, but filter out BLOCKED slots from the user view
-    return slots.filter(s => s.date === selectedDate && !s.isBlocked);
+    // Return ONLY available slots for the user
+    return slots.filter(s => 
+      s.date === selectedDate && 
+      !s.isBlocked && 
+      !s.isBooked && 
+      !s.isPast
+    );
   };
 
   const handleSlotClick = (slot: TimeSlot) => {
@@ -228,7 +239,7 @@ export default function Home() {
         <div className="mt-6 grid grid-cols-2 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-2xl font-bold text-green-600">
-              {slots.filter(s => !s.isBooked).length}
+              {slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}
             </div>
             <div className="text-sm text-gray-500">Available Slots</div>
           </div>

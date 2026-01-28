@@ -21,3 +21,27 @@ export function formatTimeToAMPM(time24: string): string {
   if (hour === 0) hour = 12;
   return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
 }
+
+/**
+ * Checks if a specific time on a date has already passed in Bangladesh time.
+ * If no date is provided, it assumes today.
+ */
+export function isPastSlotEnd(dateStr: string, endTime: string): boolean {
+  const now = new Date();
+  const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+  const todayStr = bdNow.getFullYear() + '-' + 
+                  (bdNow.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                  bdNow.getDate().toString().padStart(2, '0');
+
+  if (dateStr < todayStr) return true;
+  if (dateStr > todayStr) return false;
+
+  const [h, m] = endTime.split(':').map(Number);
+  const currentH = bdNow.getHours();
+  const currentM = bdNow.getMinutes();
+
+  if (currentH > h) return true;
+  if (currentH === h && currentM >= m) return true;
+
+  return false;
+}

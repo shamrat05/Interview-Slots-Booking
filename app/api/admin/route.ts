@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       joiningPreference: string;
       slotDate: string;
       slotTime: string;
+      slotEndTime: string;
       bookedAt: string;
       whatsappSent: boolean;
       _rawStartTime: string;
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
             : rawStartTime 
               ? formatTimeToAMPM(rawStartTime)
               : 'N/A',
+          slotEndTime: rawEndTime,
           bookedAt: booking.bookedAt,
           whatsappSent: !!booking.whatsappSent
         });

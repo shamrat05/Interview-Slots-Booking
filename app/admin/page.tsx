@@ -30,6 +30,7 @@ import {
 import * as XLSX from 'xlsx';
 import ScheduleManager from '@/components/ScheduleManager';
 import ConfigManager from '@/components/ConfigManager';
+import { isPastSlotEnd } from '@/lib/utils';
 
 interface AdminBooking {
   id: string;
@@ -40,6 +41,7 @@ interface AdminBooking {
   joiningPreference: string;
   slotDate: string;
   slotTime: string;
+  slotEndTime: string;
   bookedAt: string;
   whatsappSent?: boolean;
 }
@@ -834,7 +836,7 @@ export default function AdminPage() {
         {activeTab === 'bookings' ? (
           <>
             {/* Stats Cards - Optimized for Mobile */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -857,20 +859,29 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm col-span-2 md:col-span-1">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="w-8 h-8 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Clock className="w-4 h-4 md:w-6 md:h-6 text-purple-600" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                      {adminData?.bookings.filter(b => {
-                        const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
-                        const todayStr = bdNow.toISOString().split('T')[0];
-                        return b.slotDate >= todayStr;
-                      }).length || 0}
+                      {adminData?.bookings.filter(b => !isPastSlotEnd(b.slotDate, b.slotEndTime)).length || 0}
                     </p>
-                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Upcoming Bookings</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Upcoming</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-gray-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                      {adminData?.bookings.filter(b => isPastSlotEnd(b.slotDate, b.slotEndTime)).length || 0}
+                    </p>
+                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Completed</p>
                   </div>
                 </div>
               </div>
