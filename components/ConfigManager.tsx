@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Save, Loader2, AlertCircle, CheckCircle, Clock, Calendar } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Loader2, AlertCircle, CheckCircle, Clock, Calendar, Video, ShieldCheck } from 'lucide-react';
 
 interface GlobalConfig {
   startHour: number;
@@ -22,10 +22,24 @@ export default function ConfigManager({ adminSecret }: ConfigManagerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   useEffect(() => {
     fetchConfig();
+    checkGoogleStatus();
   }, []);
+
+  const checkGoogleStatus = async () => {
+    try {
+      const response = await fetch(`/api/admin/config?secret=${encodeURIComponent(adminSecret)}`);
+      const data = await response.json();
+      if (data.success && data.isGoogleConnected) {
+        setIsGoogleConnected(true);
+      }
+    } catch (err) {
+      console.error('Failed to check google status');
+    }
+  };
 
   const fetchConfig = async () => {
     setIsLoading(true);
@@ -191,9 +205,59 @@ export default function ConfigManager({ adminSecret }: ConfigManagerProps) {
                 placeholder="Hello {name}, your interview is at {time}..."
               />
               <p className="text-[10px] text-gray-400 mt-1">
-                Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{day}`}</span>, <span className="font-mono text-primary-600">{`{date}`}</span>, <span className="font-mono text-primary-600">{`{time}`}</span>
+                Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{day}`}</span>, <span className="font-mono text-primary-600">{`{date}`}</span>, <span className="font-mono text-primary-600">{`{time}`}</span>, <span className="font-mono text-primary-600">{`{link}`}</span>
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Google Calendar Integration */}
+        <div className="pt-4 border-t border-gray-100">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                <Video className="w-4 h-4 text-primary-600" />
+                Google Calendar Integration
+              </h3>
+              {isGoogleConnected ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                  <ShieldCheck className="w-3 h-3" />
+                  CONNECTED
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                  NOT CONNECTED
+                </span>
+              )}
+            </div>
+            
+            <p className="text-xs text-gray-500 mb-4">
+              Automatically create Google Calendar events with Google Meet links for every new booking. 
+              The link will be available as <span className="font-mono font-bold text-primary-600">{`{link}`}</span> in your WhatsApp template.
+            </p>
+
+            {isGoogleConnected ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirm('Are you sure you want to disconnect Google Calendar?')) {
+                    const res = await fetch(`/api/admin/config?secret=${encodeURIComponent(adminSecret)}`, { method: 'DELETE' });
+                    if (res.ok) setIsGoogleConnected(false);
+                  }
+                }}
+                className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1"
+              >
+                Disconnect Google Account
+              </button>
+            ) : (
+              <a
+                href={`/api/admin/auth/google?secret=${encodeURIComponent(adminSecret)}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                Connect Google Calendar
+              </a>
+            )}
           </div>
         </div>
 

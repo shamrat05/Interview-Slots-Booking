@@ -23,6 +23,7 @@ import {
   FileSpreadsheet,
   FileText,
   MessageCircle,
+  Video,
   Settings,
   LayoutDashboard,
   Search
@@ -560,7 +561,7 @@ export default function AdminPage() {
   };
 
   const sendWhatsAppConfirmation = (booking: AdminBooking) => {
-    const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. We look forward to seeing you!';
+    const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
     const template = config?.whatsappTemplate || defaultTemplate;
     
     // Get day name
@@ -571,7 +572,8 @@ export default function AdminPage() {
       .replace('{name}', booking.name)
       .replace('{day}', dayName)
       .replace('{date}', booking.slotDate)
-      .replace('{time}', booking.slotTime);
+      .replace('{time}', booking.slotTime)
+      .replace('{link}', booking.meetLink || 'Will be shared soon');
 
     const encodedMessage = encodeURIComponent(message);
     const phoneNumber = booking.whatsapp.replace(/\D/g, '');
@@ -966,6 +968,17 @@ export default function AdminPage() {
                                   <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                   {booking.joiningPreference}
                                 </span>
+                                {booking.meetLink && (
+                                  <a 
+                                    href={booking.meetLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-primary-600 font-bold hover:underline"
+                                  >
+                                    <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                    Join Meet
+                                  </a>
+                                )}
                               </div>
                               <div className="mt-1 flex items-center gap-1 text-[9px] md:text-[10px] text-gray-400">
                                 <span className="bg-gray-100 px-1 py-0.5 rounded">

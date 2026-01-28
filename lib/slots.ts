@@ -206,6 +206,23 @@ class KVStorage {
     return result === 'OK';
   }
 
+  // Google OAuth Storage
+  async setGoogleToken(token: string): Promise<boolean> {
+    const redis = await getRedisClient();
+    const result = await redis.set('app:google_refresh_token', token);
+    return result === 'OK';
+  }
+
+  async getGoogleToken(): Promise<string | null> {
+    const redis = await getRedisClient();
+    return await redis.get('app:google_refresh_token');
+  }
+
+  async deleteGoogleToken(): Promise<number> {
+    const redis = await getRedisClient();
+    return await redis.del('app:google_refresh_token');
+  }
+
   async getBlockedSlots(date: string): Promise<Set<string>> {
     const redis = await getRedisClient();
     const pattern = `blocked:${date}:*`;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { storage, generateTimeSlots, isPastSlot } from '@/lib/slots';
 import { validateBookingForm, validateWhatsAppNumber, generateBookingId } from '@/lib/validation';
+import { createCalendarEvent } from '@/lib/google-calendar';
 
 export async function GET(request: NextRequest) {
   try {
@@ -126,6 +127,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Try to create Google Calendar event if configured
+    let meetLink = '';
+    try {
+      const googleLink = await createCalendarEvent({
+        name: name.trim(),
+        email: email.trim(),
+        date,
+        startTime,
+        endTime
+      });
+      if (googleLink) meetLink = googleLink;
+    } catch (err) {
+      console.error('Failed to create google meet:', err);
+      // Don't fail the whole booking if just calendar fails
+    }
+
     // Create booking
     const bookingId = generateBookingId();
     const bookingData = {
@@ -136,6 +153,7 @@ export async function POST(request: NextRequest) {
       joiningPreference: joiningPreference.trim(),
       bookedAt: new Date().toISOString(),
       whatsappSent: false,
+      meetLink,
       slotId,
       date,
       startTime,
