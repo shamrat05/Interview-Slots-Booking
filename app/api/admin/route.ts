@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       slotDate: string;
       slotTime: string;
       bookedAt: string;
+      whatsappSent: boolean;
       _rawStartTime: string;
     }> = [];
 
@@ -72,7 +73,8 @@ export async function GET(request: NextRequest) {
             : rawStartTime 
               ? formatTimeToAMPM(rawStartTime)
               : 'N/A',
-          bookedAt: booking.bookedAt
+          bookedAt: booking.bookedAt,
+          whatsappSent: !!booking.whatsappSent
         });
       });
     });
@@ -270,6 +272,79 @@ export async function PATCH(request: NextRequest) {
     console.error('Error rescheduling booking:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to reschedule booking' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    // Initialize storage
+    storage.initialize();
+
+    // Check for admin authentication
+    const searchParams = request.nextUrl.searchParams;
+    const adminSecret = searchParams.get('secret');
+
+    if (!adminSecret) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Validate admin password
+    const storedPassword = storage.getAdminPassword();
+    if (adminSecret !== storedPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid credentials' },
+        { status: 403 }
+      );
+    }
+
+    // Get update data
+    const body = await request.json();
+    const { date, slotId, whatsappSent } = body;
+
+    if (!date || !slotId || whatsappSent === undefined) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required parameters' },
+        { status: 400 }
+      );
+    }
+
+    // Check if booking exists
+    const booking = await storage.getBooking(date, slotId);
+    if (!booking) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update the booking
+    const updatedBooking = {
+      ...(booking as object),
+      whatsappSent
+    };
+
+    const success = await storage.updateBooking(date, slotId, updatedBooking);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to update booking' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'WhatsApp status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating WhatsApp status:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update booking' },
       { status: 500 }
     );
   }

@@ -20,6 +20,7 @@ export interface BookingDetails {
   joiningPreference: string;
   bookedAt: string;
   slotId: string;
+  whatsappSent?: boolean;
 }
 
 export interface BookingFormData {
@@ -41,6 +42,7 @@ export interface AdminUser {
   slotDate: string;
   slotTime: string;
   bookedAt: string;
+  whatsappSent?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {

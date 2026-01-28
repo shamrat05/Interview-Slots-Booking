@@ -61,6 +61,13 @@ class KVStorage {
     return result === 'OK';
   }
 
+  async updateBooking(date: string, slotId: string, data: unknown): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = this.getBookingKey(date, slotId);
+    const result = await redis.set(key, JSON.stringify(data));
+    return result === 'OK';
+  }
+
   async getBooking(date: string, slotId: string): Promise<unknown | null> {
     const redis = await getRedisClient();
     const key = this.getBookingKey(date, slotId);

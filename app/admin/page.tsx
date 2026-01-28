@@ -41,6 +41,7 @@ interface AdminBooking {
   slotDate: string;
   slotTime: string;
   bookedAt: string;
+  whatsappSent?: boolean;
 }
 
 interface AdminData {
@@ -311,6 +312,39 @@ export default function AdminPage() {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [bookingToReschedule, setBookingToReschedule] = useState<AdminBooking | null>(null);
   const [availableSlots, setAvailableSlots] = useState<Array<any>>([]);
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+
+  useEffect(() => {
+    // Load dismissed notifications from local storage
+    const saved = localStorage.getItem('dismissedBookings');
+    if (saved) {
+      try {
+        setDismissedNotifications(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse dismissed bookings', e);
+      }
+    }
+  }, []);
+
+  const dismissNotification = (id: string) => {
+    const newDismissed = [...dismissedNotifications, id];
+    setDismissedNotifications(newDismissed);
+    localStorage.setItem('dismissedBookings', JSON.stringify(newDismissed));
+  };
+
+  const clearAllNotifications = () => {
+    if (!adminData) return;
+    const allIds = adminData.bookings.map(b => b.id);
+    setDismissedNotifications(allIds);
+    localStorage.setItem('dismissedBookings', JSON.stringify(allIds));
+    setShowAllNotifications(false);
+  };
+
+  const latestBookings = adminData?.bookings
+    .filter(b => !dismissedNotifications.includes(b.id))
+    .sort((a, b) => new Date(b.bookedAt).getTime() - new Date(a.bookedAt).getTime())
+    .slice(0, showAllNotifications ? undefined : 5) || [];
 
   useEffect(() => {
     // Check if already authenticated (session storage)
@@ -480,6 +514,41 @@ export default function AdminPage() {
     }
   };
 
+  const toggleWhatsAppSent = async (booking: AdminBooking) => {
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: booking.slotDate,
+            slotId: booking.slotId,
+            whatsappSent: !booking.whatsappSent
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Optimistic update
+        setAdminData(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            bookings: prev.bookings.map(b => 
+              b.id === booking.id ? { ...b, whatsappSent: !b.whatsappSent } : b
+            )
+          };
+        });
+      } else {
+        alert(data.error || 'Failed to update WhatsApp status');
+      }
+    } catch {
+      alert('Failed to update WhatsApp status');
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
@@ -517,6 +586,7 @@ export default function AdminPage() {
       Name: booking.name,
       Email: booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
+      'WhatsApp Sent': booking.whatsappSent ? 'Yes' : 'No',
       'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
@@ -547,6 +617,7 @@ export default function AdminPage() {
       'Name': booking.name,
       'Email': booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
+      'WhatsApp Sent': booking.whatsappSent ? 'Yes' : 'No',
       'Joining': booking.joiningPreference,
       'Date': booking.slotDate,
       'Time': booking.slotTime,
@@ -874,14 +945,29 @@ export default function AdminPage() {
                                   <Clock className="w-3.5 h-3.5" />
                                   Join: {booking.joiningPreference}
                                 </span>
+                                <span className="flex items-center gap-1 text-[10px] bg-gray-100 px-1.5 py-0.5 rounded italic">
+                                  Booked: {new Date(booking.bookedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                </span>
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 self-end md:self-center">
                             <button
+                              onClick={() => toggleWhatsAppSent(booking)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-semibold ${
+                                booking.whatsappSent 
+                                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                                  : 'bg-red-500 text-white hover:bg-red-600'
+                              }`}
+                              title={booking.whatsappSent ? "Mark as WhatsApp not sent" : "Mark as WhatsApp sent"}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              {booking.whatsappSent ? "Sent" : "Pending"}
+                            </button>
+                            <button
                               onClick={() => sendWhatsAppConfirmation(booking)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors text-xs font-semibold"
-                              title="Send WhatsApp Confirmation"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-xs font-semibold"
+                              title="Send WhatsApp Message"
                             >
                               <MessageCircle className="w-4 h-4" />
                               WhatsApp
@@ -948,7 +1034,86 @@ export default function AdminPage() {
         }}
       />
 
+      {/* Notifications Overlay */}
+      {isAuthenticated && adminData && latestBookings.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm flex flex-col gap-3">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="text-sm font-bold text-gray-900 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm border border-gray-200">
+              Latest Bookings ({latestBookings.length})
+            </h4>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowAllNotifications(!showAllNotifications)}
+                className="text-xs font-semibold text-primary-600 hover:text-primary-700 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200"
+              >
+                {showAllNotifications ? 'Show Less' : 'View All'}
+              </button>
+              <button 
+                onClick={clearAllNotifications}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+          
+          <div className={`flex flex-col gap-3 transition-all duration-300 ${showAllNotifications ? 'max-h-[60vh] overflow-y-auto pr-2' : ''}`}>
+            {latestBookings.map((booking) => (
+              <div 
+                key={booking.id}
+                className="bg-white rounded-xl shadow-lg border border-primary-100 p-4 animate-slide-up relative group"
+              >
+                <button 
+                  onClick={() => dismissNotification(booking.id)}
+                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900 truncate">{booking.name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {booking.slotDate} at {booking.slotTime}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(booking.bookedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setSearchTerm(booking.name);
+                          setActiveTab('bookings');
+                        }}
+                        className="text-[10px] font-bold text-primary-600 hover:underline"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out forwards;
+        }
         @keyframes scale-in {
           from {
             transform: scale(0.95);

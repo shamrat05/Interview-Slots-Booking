@@ -135,6 +135,7 @@ export async function POST(request: NextRequest) {
       whatsapp: whatsappResult.formattedNumber!,
       joiningPreference: joiningPreference.trim(),
       bookedAt: new Date().toISOString(),
+      whatsappSent: false,
       slotId,
       date,
       startTime,
