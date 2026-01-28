@@ -13,6 +13,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Edit,
   Loader2,
   AlertCircle,
   CheckCircle,
@@ -24,6 +25,7 @@ import {
   FileText,
   MessageCircle,
   Video,
+  Link,
   Settings,
   LayoutDashboard,
   Search
@@ -588,6 +590,44 @@ export default function AdminPage() {
     }
   };
 
+  const updateManualLink = async (booking: AdminBooking) => {
+    const manualLink = window.prompt('Enter meeting link manually:', booking.meetLink || 'https://');
+    if (manualLink === null) return; // Cancelled
+
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'manual-link',
+            date: booking.slotDate,
+            slotId: booking.slotId,
+            meetLink: manualLink
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setAdminData(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            bookings: prev.bookings.map(b => 
+              b.id === booking.id ? { ...b, meetLink: data.meetLink } : b
+            )
+          };
+        });
+      } else {
+        alert(data.error || 'Failed to save manual link');
+      }
+    } catch {
+      alert('Failed to connect to server');
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
@@ -1017,14 +1057,36 @@ export default function AdminPage() {
                                     Join Meet
                                   </a>
                                 )}
-                                {!booking.meetLink && (
+                                {!booking.meetLink && !isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => generateMeetLink(booking)}
+                                      className="flex items-center gap-1 text-amber-600 font-bold hover:underline"
+                                      title="Generate Google Meet Link"
+                                    >
+                                      <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                      Gen
+                                    </button>
+                                    <button
+                                      onClick={() => updateManualLink(booking)}
+                                      className="flex items-center gap-1 text-gray-500 font-bold hover:underline"
+                                      title="Add link manually"
+                                    >
+                                      <Link className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                      Manual
+                                    </button>
+                                  </div>
+                                )}
+                                {!booking.meetLink && isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
+                                  <span className="text-[10px] text-gray-400 italic">No link</span>
+                                )}
+                                {booking.meetLink && !isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
                                   <button
-                                    onClick={() => generateMeetLink(booking)}
-                                    className="flex items-center gap-1 text-amber-600 font-bold hover:underline"
-                                    title="Generate Google Meet Link"
+                                    onClick={() => updateManualLink(booking)}
+                                    className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                                    title="Edit link manually"
                                   >
-                                    <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                    Gen Link
+                                    <Edit className="w-3 h-3" />
                                   </button>
                                 )}
                               </div>

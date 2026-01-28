@@ -218,6 +218,69 @@ class KVStorage {
     return await redis.get('app:google_refresh_token');
   }
 
+  async cleanupPassedBookings(): Promise<number> {
+    const redis = await getRedisClient();
+    const keys = await redis.keys('booking:*');
+    if (keys.length === 0) return 0;
+
+    const values = await Promise.all(keys.map(key => redis.get(key)));
+    const now = new Date();
+    const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+    
+    // Current time in minutes for comparison
+    const currentTotalMinutes = (bdNow.getHours() * 60) + bdNow.getMinutes();
+    const todayStr = bdNow.getFullYear() + '-' + 
+                    (bdNow.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                    bdNow.getDate().toString().padStart(2, '0');
+    
+    let updatedCount = 0;
+
+    for (let i = 0; i < keys.length; i++) {
+      const value = values[i];
+      if (!value) continue;
+      
+      try {
+        const booking = JSON.parse(value);
+        const { date, endTime, meetLink, googleEventId } = booking;
+        
+        // If no links to clean, skip
+        if (!meetLink && !googleEventId) continue;
+        if (!date || !endTime) continue;
+
+        let shouldClearLinks = false;
+        
+        // 1. If date is before today, it's definitely passed > 2 hours
+        if (date < todayStr) {
+          shouldClearLinks = true;
+        } 
+        // 2. If it's today, check if endTime + 120 minutes (2 hours) has passed
+        else if (date === todayStr) {
+          const [h, m] = endTime.split(':').map(Number);
+          const endTotalMinutes = (h * 60) + m;
+          if (currentTotalMinutes >= (endTotalMinutes + 120)) {
+            shouldClearLinks = true;
+          }
+        }
+
+        if (shouldClearLinks) {
+          // Keep person info, just clear the heavy/temporary link data
+          const updatedBooking = {
+            ...booking,
+            meetLink: '',
+            googleEventId: ''
+          };
+          // Use direct set to update the existing key
+          await redis.set(keys[i], JSON.stringify(updatedBooking));
+          updatedCount++;
+        }
+      } catch (e) {
+        console.error('Error updating booking for cleanup:', e);
+      }
+    }
+
+    return updatedCount;
+  }
+
   async deleteGoogleToken(): Promise<number> {
     const redis = await getRedisClient();
     return await redis.del('app:google_refresh_token');

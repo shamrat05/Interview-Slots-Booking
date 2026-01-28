@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Performance cleanup: Remove passed bookings to save space
+    await storage.cleanupPassedBookings();
+
     // Fetch all bookings
     const allBookings = await storage.getAllBookings();
     const bookings: Array<{
@@ -416,7 +419,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, date, slotId } = body;
+    const { action, date, slotId, meetLink: manualLink } = body;
 
     if (action === 'generate-meet') {
       const booking = await storage.getBooking(date, slotId);
@@ -443,6 +446,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, meetLink: googleResult.meetLink });
       }
       return NextResponse.json({ success: false, error: 'Failed to generate link' });
+    }
+
+    if (action === 'manual-link') {
+      if (!manualLink) return NextResponse.json({ success: false, error: 'Link is required' }, { status: 400 });
+      
+      const booking = await storage.getBooking(date, slotId);
+      if (!booking) return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
+
+      const updatedBooking = {
+        ...(booking as any),
+        meetLink: manualLink
+      };
+      
+      await storage.updateBooking(date, slotId, updatedBooking);
+      return NextResponse.json({ success: true, meetLink: manualLink });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' });
