@@ -930,11 +930,21 @@ export default function AdminPage() {
                       {bookings.map((booking) => (
                         <div
                           key={booking.id}
-                          className="p-4 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 transition-colors gap-4"
+                          className={`p-4 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 transition-colors gap-4 ${
+                            isPastSlotEnd(booking.slotDate, booking.slotEndTime) ? 'opacity-75' : ''
+                          }`}
                         >
                           <div className="flex items-start md:items-center gap-3 md:gap-4">
-                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Clock className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              isPastSlotEnd(booking.slotDate, booking.slotEndTime) 
+                                ? 'bg-green-100' 
+                                : 'bg-gray-100'
+                            }`}>
+                              {isPastSlotEnd(booking.slotDate, booking.slotEndTime) ? (
+                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                              ) : (
+                                <Clock className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

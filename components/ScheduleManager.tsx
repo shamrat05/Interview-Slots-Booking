@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
+  Clock1, Clock2, Clock3, Clock4, Clock5, Clock6,
+  Clock7, Clock8, Clock9, Clock10, Clock11, Clock12,
   Lock, 
   Unlock, 
   Loader2, 
@@ -18,6 +20,16 @@ import {
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { formatTimeToAMPM } from '@/lib/utils';
 import ManualBookingModal from './ManualBookingModal';
+
+const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
+  const hour = parseInt(time.split(':')[0], 10) % 12 || 12;
+  const icons: Record<number, any> = {
+    1: Clock1, 2: Clock2, 3: Clock3, 4: Clock4, 5: Clock5, 6: Clock6,
+    7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12
+  };
+  const Icon = icons[hour] || Clock;
+  return <Icon className={className} />;
+};
 
 interface Slot {
   id: string;
@@ -297,7 +309,10 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-1.5 text-gray-900 font-bold">
-                        <Clock className={`w-4 h-4 ${status === 'available' ? 'text-primary-500' : 'text-gray-400'}`} />
+                        <DynamicClockIcon 
+                          time={slot.startTime} 
+                          className={`w-4 h-4 ${status === 'available' ? 'text-primary-500' : 'text-gray-400'}`} 
+                        />
                         {formatTimeToAMPM(slot.startTime)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">

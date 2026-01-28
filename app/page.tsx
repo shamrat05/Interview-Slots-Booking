@@ -2,10 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  Clock1, Clock2, Clock3, Clock4, Clock5, Clock6, 
+  Clock7, Clock8, Clock9, Clock10, Clock11, Clock12,
+  ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2 
+} from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 import { TimeSlot } from '@/lib/types';
 import { isPastSlotEnd } from '@/lib/utils';
+
+const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
+  const hour = parseInt(time.split(':')[0], 10) % 12 || 12;
+  const icons: Record<number, any> = {
+    1: Clock1, 2: Clock2, 3: Clock3, 4: Clock4, 5: Clock5, 6: Clock6,
+    7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12
+  };
+  const Icon = icons[hour] || Clock;
+  return <Icon className={className} />;
+};
 
 export default function Home() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -35,14 +51,10 @@ export default function Home() {
           setConfig(data.data.config);
         }
         
-        const available = allSlots.filter((s: TimeSlot) => !s.isBooked && !s.isBlocked && !s.isPast);
-        
-        if (available.length > 0) {
-          const firstAvailableDate = available[0].date;
-          setSelectedDate(firstAvailableDate);
-        } else if (allSlots.length > 0) {
-          // If no available slots, still set a date but UI will show "No slots available"
-          setSelectedDate(allSlots[0].date);
+        // Find first date that has ANY slots (to keep UI consistent)
+        if (allSlots.length > 0) {
+          const firstDate = allSlots[0].date;
+          setSelectedDate(firstDate);
         }
       } else {
         setError(data.error || 'Failed to load slots');
@@ -55,19 +67,15 @@ export default function Home() {
   };
 
   const getDatesForDisplay = () => {
-    // Only show dates that have at least one AVAILABLE slot
-    const datesWithAvailableSlots = [...new Set(
-      slots
-        .filter(s => !s.isBooked && !s.isBlocked && !s.isPast)
-        .map(s => s.date)
-    )];
+    // Show all dates that have slots
+    const dates = [...new Set(slots.map(s => s.date))];
     
     // Get today's date string in Bangladesh timezone
     const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
     const todayStr = format(bdNow, 'yyyy-MM-dd');
     const tomorrowStr = format(new Date(bdNow.getTime() + 86400000), 'yyyy-MM-dd');
 
-    return datesWithAvailableSlots.map(date => ({
+    return dates.map(date => ({
       date,
       displayName: format(new Date(date), 'EEE, MMM d'),
       isToday: date === todayStr,
@@ -76,17 +84,12 @@ export default function Home() {
   };
 
   const getSlotsForSelectedDate = () => {
-    // Return ONLY available slots for the user
-    return slots.filter(s => 
-      s.date === selectedDate && 
-      !s.isBlocked && 
-      !s.isBooked && 
-      !s.isPast
-    );
+    // Return all slots for the date, but they will be styled differently if unavailable
+    return slots.filter(s => s.date === selectedDate);
   };
 
   const handleSlotClick = (slot: TimeSlot) => {
-    if (slot.isBooked || slot.isPast) return;
+    if (slot.isBooked || slot.isPast || slot.isBlocked) return;
     setSelectedSlot(slot);
     setShowBookingModal(true);
   };
@@ -203,28 +206,40 @@ export default function Home() {
             </h2>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {currentSlots.map((slot) => (
-                <button
-                  key={slot.id}
-                  onClick={() => handleSlotClick(slot)}
-                  disabled={slot.isBooked || slot.isPast}
-                  className={`p-4 rounded-lg border-2 font-medium transition-all ${
-                    slot.isBooked || slot.isPast
-                      ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 hover:shadow-md cursor-pointer'
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Clock className={`w-4 h-4 ${slot.isBooked || slot.isPast ? 'text-gray-400' : 'text-primary-500'}`} />
-                    <span>{slot.startTime}</span>
-                  </div>
-                  {(slot.isBooked || slot.isPast) && (
-                    <div className="mt-2 text-xs text-gray-400">
-                      {slot.isBooked ? 'Booked' : 'Passed'}
+              {currentSlots.map((slot) => {
+                const isUnavailable = slot.isBooked || slot.isPast || slot.isBlocked;
+                return (
+                  <button
+                    key={slot.id}
+                    onClick={() => handleSlotClick(slot)}
+                    disabled={isUnavailable}
+                    className={`p-4 rounded-lg border-2 font-medium transition-all ${
+                      isUnavailable
+                        ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 hover:shadow-md cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {slot.isBooked ? (
+                        <CheckCircle className="w-4 h-4 text-gray-400" />
+                      ) : slot.isBlocked ? (
+                        <Lock className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <DynamicClockIcon 
+                          time={slot.startTime} 
+                          className={`w-4 h-4 ${slot.isPast ? 'text-gray-400' : 'text-primary-500'}`} 
+                        />
+                      )}
+                      <span>{slot.startTime}</span>
                     </div>
-                  )}
-                </button>
-              ))}
+                    {isUnavailable && (
+                      <div className="mt-2 text-[10px] uppercase tracking-wider font-bold">
+                        {slot.isBooked ? 'Booked' : slot.isPast ? 'Passed' : 'Unavailable'}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
