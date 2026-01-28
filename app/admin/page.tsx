@@ -833,59 +833,59 @@ export default function AdminPage() {
 
         {activeTab === 'bookings' ? (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-blue-600" />
+            {/* Stats Cards - Optimized for Mobile */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{adminData?.stats.total || 0}</p>
-                    <p className="text-sm text-gray-500">Total Bookings</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{adminData?.stats.uniqueDates || 0}</p>
-                    <p className="text-sm text-gray-500">Days with Bookings</p>
+                  <div className="min-w-0">
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{adminData?.stats.total || 0}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Total</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-purple-600" />
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">
+                  <div className="min-w-0">
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{adminData?.stats.uniqueDates || 0}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Days</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm col-span-2 md:col-span-1">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-4 h-4 md:w-6 md:h-6 text-purple-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
                       {adminData?.bookings.filter(b => {
                         const bdNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
                         const todayStr = bdNow.toISOString().split('T')[0];
                         return b.slotDate >= todayStr;
                       }).length || 0}
                     </p>
-                    <p className="text-sm text-gray-500">Upcoming</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 truncate">Upcoming Bookings</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="mb-6">
+            {/* Search Bar - Sticky on Mobile */}
+            <div className="mb-6 sticky top-[4.5rem] md:static z-20">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, WhatsApp or date..."
+                  placeholder="Search applicants..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-sm transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-md md:shadow-sm transition-all text-sm"
                 />
               </div>
             </div>
@@ -903,94 +903,99 @@ export default function AdminPage() {
                 <p className="text-gray-500">When applicants book slots, they will appear here.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {Object.entries(groupedBookings || {}).map(([date, bookings]) => (
                   <div key={date} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-primary-600" />
-                        <h3 className="font-semibold text-gray-900">{date}</h3>
-                        <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
-                          {bookings.length} booking{bookings.length !== 1 ? 's' : ''}
-                        </span>
+                        <Calendar className="w-4 h-4 md:w-5 h-5 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm md:text-base">{date}</h3>
                       </div>
+                      <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-[10px] md:text-xs font-medium rounded-full">
+                        {bookings.length}
+                      </span>
                     </div>
                     <div className="divide-y divide-gray-100">
                       {bookings.map((booking) => (
                         <div
                           key={booking.id}
-                          className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 transition-colors gap-4"
+                          className="p-4 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 transition-colors gap-4"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                              <Clock className="w-5 h-5 text-gray-500" />
+                          <div className="flex items-start md:items-center gap-3 md:gap-4">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Clock className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900">{booking.name}</span>
-                                <span className="px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded font-medium">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className="font-bold text-gray-900 text-sm md:text-base truncate max-w-[150px] md:max-w-none">{booking.name}</span>
+                                <span className="px-1.5 py-0.5 bg-primary-50 text-primary-700 text-[10px] rounded font-medium whitespace-nowrap">
                                   {booking.slotTime}
                                 </span>
                               </div>
-                              <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <Mail className="w-3.5 h-3.5" />
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1 mt-1 text-[11px] md:text-sm text-gray-500">
+                                <span className="flex items-center gap-1 truncate">
+                                  <Mail className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                   {booking.email}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Phone className="w-3.5 h-3.5" />
+                                <span className="flex items-center gap-1 truncate">
+                                  <Phone className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                   {booking.whatsapp}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  Join: {booking.joiningPreference}
+                                <span className="flex items-center gap-1 truncate">
+                                  <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                  {booking.joiningPreference}
                                 </span>
-                                <span className="flex items-center gap-1 text-[10px] bg-gray-100 px-1.5 py-0.5 rounded italic">
+                              </div>
+                              <div className="mt-1 flex items-center gap-1 text-[9px] md:text-[10px] text-gray-400">
+                                <span className="bg-gray-100 px-1 py-0.5 rounded">
                                   Booked: {new Date(booking.bookedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 self-end md:self-center">
-                            <button
-                              onClick={() => toggleWhatsAppSent(booking)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-semibold ${
-                                booking.whatsappSent 
-                                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                                  : 'bg-red-500 text-white hover:bg-red-600'
-                              }`}
-                              title={booking.whatsappSent ? "Mark as WhatsApp not sent" : "Mark as WhatsApp sent"}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              {booking.whatsappSent ? "Sent" : "Pending"}
-                            </button>
-                            <button
-                              onClick={() => sendWhatsAppConfirmation(booking)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-xs font-semibold"
-                              title="Send WhatsApp Message"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              WhatsApp
-                            </button>
-                            <button
-                              onClick={() => handleRescheduleClick(booking)}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Reschedule booking"
-                            >
-                              <RefreshCw className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(booking)}
-                              disabled={deletingId === booking.id}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                              title="Cancel booking"
-                            >
-                              {deletingId === booking.id ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-5 h-5" />
-                              )}
-                            </button>
+                          
+                          {/* Actions - Organized for Mobile */}
+                          <div className="flex items-center gap-2 justify-between md:justify-end bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => toggleWhatsAppSent(booking)}
+                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors text-[10px] font-bold ${
+                                  booking.whatsappSent 
+                                    ? 'bg-green-600 text-white' 
+                                    : 'bg-red-500 text-white'
+                                }`}
+                              >
+                                {booking.whatsappSent ? "Sent" : "Pending"}
+                              </button>
+                              <button
+                                onClick={() => sendWhatsAppConfirmation(booking)}
+                                className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                WA
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleRescheduleClick(booking)}
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                title="Reschedule"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(booking)}
+                                disabled={deletingId === booking.id}
+                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                              >
+                                {deletingId === booking.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1034,68 +1039,85 @@ export default function AdminPage() {
         }}
       />
 
-      {/* Notifications Overlay */}
+      {/* Notifications Overlay - Compact "Fizzy" Style */}
       {isAuthenticated && adminData && latestBookings.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm flex flex-col gap-3">
-          <div className="flex items-center justify-between mb-1">
-            <h4 className="text-sm font-bold text-gray-900 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm border border-gray-200">
-              Latest Bookings ({latestBookings.length})
-            </h4>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setShowAllNotifications(!showAllNotifications)}
-                className="text-xs font-semibold text-primary-600 hover:text-primary-700 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200"
-              >
-                {showAllNotifications ? 'Show Less' : 'View All'}
-              </button>
-              <button 
-                onClick={clearAllNotifications}
-                className="text-xs font-semibold text-red-600 hover:text-red-700 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2">
           
-          <div className={`flex flex-col gap-3 transition-all duration-300 ${showAllNotifications ? 'max-h-[60vh] overflow-y-auto pr-2' : ''}`}>
-            {latestBookings.map((booking) => (
-              <div 
-                key={booking.id}
-                className="bg-white rounded-xl shadow-lg border border-primary-100 p-4 animate-slide-up relative group"
-              >
-                <button 
-                  onClick={() => dismissNotification(booking.id)}
-                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+          {/* Main Notification Card - Only visible when expanded or just 1 */}
+          {(showAllNotifications || latestBookings.length === 1) && (
+            <div className={`flex flex-col gap-2 transition-all duration-300 ${showAllNotifications ? 'max-h-[70vh] w-[280px] md:w-[320px] overflow-y-auto p-1' : 'w-[280px]'}`}>
+              {latestBookings.map((booking, idx) => (
+                <div 
+                  key={booking.id}
+                  className={`bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-primary-100 p-3 animate-slide-up relative group transition-all ${
+                    !showAllNotifications && idx > 0 ? 'hidden' : ''
+                  }`}
                 >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-gray-900 truncate">{booking.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {booking.slotDate} at {booking.slotTime}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(booking.bookedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                  <button 
+                    onClick={() => dismissNotification(booking.id)}
+                    className="absolute top-1 right-1 p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Users className="w-4 h-4 text-primary-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-gray-900 truncate">{booking.name}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {booking.slotDate} • {booking.slotTime}
+                      </p>
                       <button 
                         onClick={() => {
                           setSearchTerm(booking.name);
                           setActiveTab('bookings');
                         }}
-                        className="text-[10px] font-bold text-primary-600 hover:underline"
+                        className="text-[9px] font-bold text-primary-600 hover:underline mt-1"
                       >
                         View Details
                       </button>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* Controls - The "Fizzy" Part */}
+          <div className="flex items-center gap-2">
+            {latestBookings.length > 1 && !showAllNotifications && (
+              <div className="flex -space-x-2 mr-1">
+                {latestBookings.slice(0, 3).map((b, i) => (
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-primary-500 flex items-center justify-center text-[8px] text-white font-bold shadow-sm">
+                    {b.name.charAt(0)}
+                  </div>
+                ))}
+                {latestBookings.length > 3 && (
+                  <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[8px] text-gray-600 font-bold shadow-sm">
+                    +{latestBookings.length - 3}
+                  </div>
+                )}
               </div>
-            ))}
+            )}
+            
+            <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 p-1 flex items-center gap-1">
+              <button 
+                onClick={() => setShowAllNotifications(!showAllNotifications)}
+                className="px-3 py-1 text-[10px] font-bold text-primary-600 hover:bg-primary-50 rounded-full transition-colors flex items-center gap-1"
+              >
+                {showAllNotifications ? 'Collapse' : `New Bookings (${latestBookings.length})`}
+              </button>
+              {showAllNotifications && (
+                <button 
+                  onClick={clearAllNotifications}
+                  className="p-1 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  title="Clear All"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

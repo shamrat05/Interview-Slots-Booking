@@ -47,6 +47,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
   const [isProcessingDay, setIsProcessingDay] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
   const [selectedSlotForManual, setSelectedSlotForManual] = useState<Slot | null>(null);
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
 
   // Generate date options (next 14 days) including today
   const dateOptions = Array.from({ length: 14 }, (_, i) => {
@@ -166,7 +167,18 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
             </p>
           </div>
           
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            <button
+              onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
+              className={`px-4 py-2 text-sm font-bold rounded-lg border transition-all flex items-center gap-2 whitespace-nowrap ${
+                showOnlyAvailable
+                  ? 'bg-primary-50 text-primary-700 border-primary-200'
+                  : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {showOnlyAvailable ? 'Showing Available' : 'Showing All Slots'}
+            </button>
+            <div className="h-8 w-px bg-gray-200 mx-1 hidden md:block"></div>
             <button
               onClick={toggleDayBlock}
               disabled={isProcessingDay}
@@ -246,17 +258,27 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
               Try Again
             </button>
           </div>
-        ) : slots.length === 0 ? (
+        ) : slots.filter(slot => !showOnlyAvailable || (!slot.isBooked && !slot.isBlocked && !slot.isPast)).length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-            <Info className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No Generated Slots</h3>
+            <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">No Available Slots</h3>
             <p className="text-gray-500 mt-1 max-w-xs mx-auto">
-              No slots were generated for this date. Check your configuration.
+              All slots are either booked, blocked, or in the past for this date.
             </p>
+            {showOnlyAvailable && (
+              <button 
+                onClick={() => setShowOnlyAvailable(false)}
+                className="mt-4 text-primary-600 font-bold hover:underline"
+              >
+                Show All Slots
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {slots.map((slot) => {
+            {slots
+              .filter(slot => !showOnlyAvailable || (!slot.isBooked && !slot.isBlocked && !slot.isPast))
+              .map((slot) => {
               const status = slot.isBooked ? 'booked' : slot.isPast ? 'passed' : slot.isBlocked ? 'blocked' : 'available';
               
               return (
