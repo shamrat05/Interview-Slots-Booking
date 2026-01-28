@@ -29,7 +29,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    whatsapp: '+88',
+    whatsapp: '+8801',
     joiningPreference: '',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -65,23 +65,16 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
 
   const validateWhatsApp = (): boolean => {
     const newErrors: { [key: string]: string } = {};
+    const val = formData.whatsapp.trim();
 
-    if (!formData.whatsapp.trim()) {
+    if (!val) {
       newErrors.whatsapp = 'WhatsApp number is required';
-    } else {
-      // Clean the phone number
-      const cleanedPhone = formData.whatsapp.trim().replace(/[\s-]/g, '');
-      
-      // Check for valid WhatsApp format
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      
-      if (cleanedPhone.length < 10) {
-        newErrors.whatsapp = 'Phone number must be at least 10 digits';
-      } else if (cleanedPhone.length > 15) {
-        newErrors.whatsapp = 'Phone number is too long';
-      } else if (!phoneRegex.test(cleanedPhone)) {
-        newErrors.whatsapp = 'Please enter a valid phone number (e.g., +8801XXXXXXXXX)';
-      }
+    } else if (!val.startsWith('+8801')) {
+      newErrors.whatsapp = 'Must start with +8801';
+    } else if (val.length !== 14) {
+      newErrors.whatsapp = `Must be exactly 13 digits after + (Current digits: ${val.length - 1})`;
+    } else if (!/^\+8801\d{9}$/.test(val)) {
+      newErrors.whatsapp = 'Invalid format. Use +8801XXXXXXXXX';
     }
 
     setErrors(newErrors);
@@ -401,9 +394,15 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Booking Confirmed!</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Your interview has been scheduled successfully.
             </p>
+
+            <div className="bg-red-50 border border-red-100 rounded-lg p-3 mb-6">
+              <p className="text-[11px] text-red-700 leading-relaxed">
+                <strong>Note:</strong> If you do not receive the interview link via WhatsApp at least 1 hour before your scheduled time, please contact the number or email from which you received this confirmation.
+              </p>
+            </div>
             
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-left mb-6">
               <div className="space-y-2 text-sm">

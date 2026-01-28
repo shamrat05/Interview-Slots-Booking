@@ -240,11 +240,9 @@ export default function Home() {
                       )}
                       <span>{slot.startTime}</span>
                     </div>
-                    {isUnavailable && (
-                      <div className="mt-2 text-[10px] uppercase tracking-wider font-bold">
-                        {slot.isBooked ? 'Booked' : slot.isPast ? 'Passed' : 'Unavailable'}
-                      </div>
-                    )}
+                    <div className="mt-2 text-[10px] uppercase tracking-wider font-bold">
+                      {slot.isBooked ? 'Booked' : slot.isPast ? 'Passed' : slot.isBlocked ? 'Unavailable' : <span className="text-primary-600">Available</span>}
+                    </div>
                   </button>
                 );
               })}

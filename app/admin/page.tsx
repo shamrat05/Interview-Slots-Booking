@@ -851,7 +851,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3">
                   <div className="w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
+                    <Calendar className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{adminData?.stats.uniqueDates || 0}</p>
