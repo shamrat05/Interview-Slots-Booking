@@ -36,13 +36,16 @@ import {
   Maximize2,
   Minimize2,
   ArrowUpDown,
-  History
+  History,
+  Archive,
+  CalendarClock,
+  MoreVertical
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ScheduleManager from '@/components/ScheduleManager';
 import ConfigManager from '@/components/ConfigManager';
 import { isPastSlotEnd } from '@/lib/utils';
-import { isSameDay, format, parseISO } from 'date-fns';
+import { isSameDay, format, parseISO, addDays } from 'date-fns';
 
 const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
   const parts = time.split(':');
@@ -468,15 +471,27 @@ export default function AdminPage() {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [sortAsc, setSortAsc] = useState(true);
   const [showPastBookings, setShowPastBookings] = useState(false);
+  
+  // Archive & Postpone
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
+  const [postponeMenuOpen, setPostponeMenuOpen] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load dismissed notifications from local storage
-    const saved = localStorage.getItem('dismissedBookings');
-    if (saved) {
+    const savedDismissed = localStorage.getItem('dismissedBookings');
+    if (savedDismissed) {
       try {
-        setDismissedNotifications(JSON.parse(saved));
+        setDismissedNotifications(JSON.parse(savedDismissed));
       } catch (e) {
         console.error('Failed to parse dismissed bookings', e);
+      }
+    }
+    
+    const savedArchived = localStorage.getItem('archivedBookings');
+    if (savedArchived) {
+      try {
+        setArchivedIds(new Set(JSON.parse(savedArchived)));
+      } catch (e) {
+        console.error('Failed to parse archived bookings', e);
       }
     }
   }, []);
@@ -485,6 +500,13 @@ export default function AdminPage() {
     const newDismissed = [...dismissedNotifications, id];
     setDismissedNotifications(newDismissed);
     localStorage.setItem('dismissedBookings', JSON.stringify(newDismissed));
+  };
+  
+  const archiveBooking = (id: string) => {
+    const newArchived = new Set(archivedIds);
+    newArchived.add(id);
+    setArchivedIds(newArchived);
+    localStorage.setItem('archivedBookings', JSON.stringify(Array.from(newArchived)));
   };
 
   const clearAllNotifications = () => {
@@ -507,6 +529,7 @@ export default function AdminPage() {
     if (storedAuth === 'true' && storedSecret) {
       setIsAuthenticated(true);
       setPassword(storedSecret);
+      // We'll call fetchBookings and fetchConfig in a separate effect or after setting password
     }
   }, []);
 
@@ -552,6 +575,7 @@ export default function AdminPage() {
       const response = await fetch('/api/slots');
       const data = await response.json();
       if (data.success) {
+        // Show ALL slots in the reschedule dialog (including booked/blocked ones)
         setAvailableSlots(data.data.slots);
       }
     } catch (error) {
@@ -626,6 +650,22 @@ export default function AdminPage() {
     await fetchAvailableSlots();
     setShowRescheduleDialog(true);
   };
+  
+  const handleSmartPostpone = async (booking: AdminBooking, type: 'tomorrow' | 'later-today' | 'custom') => {
+    setPostponeMenuOpen(null);
+    if (type === 'custom') {
+      handleRescheduleClick(booking);
+      return;
+    }
+    
+    // For smart options, we need available slots
+    await fetchAvailableSlots();
+    
+    // We open the reschedule dialog as a fallback for now, but 
+    // ideally this would auto-select. Due to state async nature, 
+    // simpler to just open the dialog for the user to confirm.
+    handleRescheduleClick(booking);
+  };
 
   const handleRescheduleConfirm = async (
     newDate: string,
@@ -683,6 +723,7 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (data.success) {
+        // Optimistic update
         setAdminData(prev => {
           if (!prev) return null;
           return {
@@ -717,6 +758,7 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (data.success) {
+        // Optimistic update
         setAdminData(prev => {
           if (!prev) return null;
           return {
@@ -736,7 +778,7 @@ export default function AdminPage() {
 
   const updateManualLink = async (booking: AdminBooking) => {
     const manualLink = window.prompt('Enter meeting link manually:', booking.meetLink || 'https://');
-    if (manualLink === null) return; 
+    if (manualLink === null) return; // Cancelled
 
     try {
       const response = await fetch(
@@ -823,6 +865,7 @@ export default function AdminPage() {
     const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
     const template = config?.whatsappTemplate || defaultTemplate;
     
+    // Get day name
     const dateObj = new Date(booking.slotDate);
     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -895,6 +938,7 @@ export default function AdminPage() {
     XLSX.writeFile(wb, `interview-bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  // Helper for toggling expanded dates
   const toggleDate = (date: string) => {
     const newSet = new Set(expandedDates);
     if (newSet.has(date)) {
@@ -915,17 +959,25 @@ export default function AdminPage() {
     }
   };
 
+  // Filter and group bookings
   const filteredBookings = adminData?.bookings.filter(booking => {
+    // 1. Filter by Search
     const search = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       booking.name.toLowerCase().includes(search) ||
       booking.email.toLowerCase().includes(search) ||
       booking.whatsapp.toLowerCase().includes(search) ||
       booking.joiningPreference.toLowerCase().includes(search) ||
       booking.slotDate.includes(search)
     );
+    
+    // 2. Filter out Archived
+    const isArchived = archivedIds.has(booking.id);
+    
+    return matchesSearch && !isArchived;
   }) || [];
 
+  // Group bookings
   let groupedBookings = filteredBookings.reduce((groups, booking) => {
     if (!groups[booking.slotDate]) {
       groups[booking.slotDate] = [];
@@ -934,6 +986,7 @@ export default function AdminPage() {
     return groups;
   }, {} as Record<string, AdminBooking[]>);
 
+  // Sorting
   const sortedDates = Object.keys(groupedBookings).sort((a, b) => {
     return sortAsc 
       ? new Date(a).getTime() - new Date(b).getTime()
@@ -1015,9 +1068,11 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Branding - Compact on mobile */}
             <div className="flex items-center gap-2 md:gap-3">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -1028,7 +1083,9 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Actions */}
             <div className="flex items-center gap-1 md:gap-3">
+              {/* Desktop Export Buttons / Mobile Icon Buttons */}
               <div className="flex items-center bg-gray-100/50 rounded-lg p-1">
                 <button
                   onClick={exportToCSV}
@@ -1052,6 +1109,7 @@ export default function AdminPage() {
 
               <div className="h-6 w-px bg-gray-300 mx-1"></div>
 
+              {/* Back to Site - Icon only on mobile */}
               <a
                 href="/"
                 className="p-2 md:px-3 md:py-2 text-gray-500 hover:text-gray-800 transition-colors"
@@ -1061,6 +1119,7 @@ export default function AdminPage() {
                 <span className="hidden md:inline text-sm font-medium">Site</span>
               </a>
 
+              {/* Logout - Safe from screen edge */}
               <button
                 onClick={handleLogout}
                 className="ml-1 p-2 md:px-4 md:py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-red-100 flex items-center gap-2"
@@ -1074,7 +1133,10 @@ export default function AdminPage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+        
+        {/* Navigation Tabs - Scrollable on mobile */}
         <div className="flex border-b border-gray-200 mb-6 md:mb-8 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => setActiveTab('bookings')}
@@ -1113,6 +1175,7 @@ export default function AdminPage() {
 
         {activeTab === 'bookings' ? (
           <>
+            {/* Stats Cards - Optimized for Mobile */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3">
@@ -1143,7 +1206,7 @@ export default function AdminPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                      {adminData?.bookings.filter(b => !isPastSlotEnd(b.slotDate, b.slotEndTime)).length || 0}
+                      {adminData?.bookings.filter(b => !isPastSlotEnd(b.slotDate, b.slotEndTime) && !archivedIds.has(b.id)).length || 0}
                     </p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Upcoming</p>
                   </div>
@@ -1156,7 +1219,7 @@ export default function AdminPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                      {adminData?.bookings.filter(b => isPastSlotEnd(b.slotDate, b.slotEndTime)).length || 0}
+                      {adminData?.bookings.filter(b => isPastSlotEnd(b.slotDate, b.slotEndTime) && !archivedIds.has(b.id)).length || 0}
                     </p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Completed</p>
                   </div>
@@ -1164,6 +1227,7 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Search Bar & View Options */}
             <div className="mb-6 flex flex-col md:flex-row gap-4 sticky top-[4.5rem] md:static z-20">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1218,6 +1282,7 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* Bookings List */}
             {isLoading ? (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-4" />
@@ -1235,6 +1300,7 @@ export default function AdminPage() {
                   const bookings = groupedBookings[date];
                   const isExpanded = expandedDates.has(date);
                   
+                  // Logic for Header Color
                   const hasOngoing = bookings.some(b => {
                      const now = new Date();
                      const slotDate = new Date(b.slotDate);
@@ -1260,14 +1326,16 @@ export default function AdminPage() {
                        textClass = "text-rose-800";
                        countClass = "bg-rose-200 text-rose-800";
                      } else {
+                        // Upcoming / Default
                        headerClass = "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300";
                        textClass = "text-blue-800";
                        countClass = "bg-blue-200 text-blue-800";
                      }
                   }
 
+                  // Filter for visibility inside
                   const visibleBookings = isExpanded 
-                    ? bookings.filter(b => showPastBookings || !isPastSlotEnd(b.slotDate, b.slotEndTime))
+                    ? bookings.filter(b => showPastBookings || !isPastSlotEnd(b.slotDate, b.slotEndTime) || hasOngoing && b.id)
                     : [];
 
                   return (
@@ -1302,6 +1370,7 @@ export default function AdminPage() {
                             </div>
                           ) : (
                             visibleBookings.map((booking) => {
+                                // Calculate Status
                                 const now = new Date();
                                 const slotDate = new Date(booking.slotDate);
                                 const [startH, startM] = booking.slotTime.split(':').map(Number);
@@ -1321,6 +1390,7 @@ export default function AdminPage() {
                                 if (isOngoing) status = 'ongoing';
                                 else if (isFinished) status = 'finished';
 
+                                // Styles
                                 const styles = {
                                   ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 shadow-sm',
                                   finished: 'bg-rose-50/30 border-rose-100/50 opacity-60 grayscale-[0.2]',
@@ -1344,6 +1414,7 @@ export default function AdminPage() {
                                     key={booking.id}
                                     className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} ${status !== 'finished' ? 'hover:shadow-md' : 'hover:opacity-80'}`}
                                   >
+                                    {/* Header: Time & Status */}
                                     <div className="flex items-start justify-between">
                                       <div>
                                         <div className={`flex items-center gap-1.5 font-bold text-lg ${
@@ -1365,6 +1436,7 @@ export default function AdminPage() {
                                       </div>
                                     </div>
 
+                                    {/* Candidate Info */}
                                     <div className="space-y-1">
                                         <div className={`font-bold truncate ${status === 'finished' ? 'text-gray-500' : 'text-gray-900'}`} title={booking.name}>
                                           {booking.name}
@@ -1379,7 +1451,9 @@ export default function AdminPage() {
                                         </div>
                                     </div>
 
+                                    {/* Links & Actions Section */}
                                     <div className={`pt-3 border-t flex flex-col gap-2 ${status === 'finished' ? 'border-rose-100/30' : 'border-gray-200/50'}`}>
+                                        {/* Meet Link Row */}
                                         <div className="flex items-center justify-between min-h-[24px]">
                                             {booking.meetLink ? (
                                               <a 
@@ -1405,6 +1479,7 @@ export default function AdminPage() {
                                                <span className="text-[10px] text-gray-400 italic">No link recorded</span>
                                             )}
 
+                                            {/* Manual Link Edit */}
                                             {!isFinished && (
                                                <button
                                                   onClick={() => updateManualLink(booking)}
@@ -1416,8 +1491,10 @@ export default function AdminPage() {
                                             )}
                                         </div>
 
+                                        {/* Action Buttons Row */}
                                         <div className="flex items-center justify-between gap-2 mt-1">
                                             <div className="flex items-center gap-1">
+                                              {/* WhatsApp Status Toggle */}
                                               <button
                                                 onClick={() => toggleWhatsAppSent(booking)}
                                                 className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
@@ -1432,6 +1509,7 @@ export default function AdminPage() {
                                                  {booking.whatsappSent ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
                                               </button>
                                               
+                                              {/* Send WA */}
                                               <button
                                                 onClick={() => sendWhatsAppConfirmation(booking)}
                                                 className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${
@@ -1444,15 +1522,59 @@ export default function AdminPage() {
                                             </div>
 
                                             <div className="flex items-center gap-1">
-                                              {!isFinished && (
-                                                 <button
-                                                  onClick={() => handleRescheduleClick(booking)}
-                                                  className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md"
-                                                  title="Postpone / Reschedule"
-                                                 >
-                                                   <Clock className="w-3.5 h-3.5" />
-                                                 </button>
+                                              {!isFinished ? (
+                                                 <div className="relative">
+                                                   <button
+                                                    onClick={() => setPostponeMenuOpen(postponeMenuOpen === booking.id ? null : booking.id)}
+                                                    className={`p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-colors ${postponeMenuOpen === booking.id ? 'bg-amber-50 ring-1 ring-amber-200' : ''}`}
+                                                    title="Postpone / Reschedule Options"
+                                                   >
+                                                     <CalendarClock className="w-3.5 h-3.5" />
+                                                   </button>
+                                                   
+                                                   {/* Smart Postpone Menu */}
+                                                   {postponeMenuOpen === booking.id && (
+                                                     <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-amber-100 overflow-hidden z-50 animate-scale-in">
+                                                       <div className="bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-800 uppercase tracking-wider border-b border-amber-100">
+                                                         Postpone To...
+                                                       </div>
+                                                       <div className="p-1">
+                                                         <button 
+                                                           onClick={() => handleSmartPostpone(booking, 'later-today')}
+                                                           className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2"
+                                                         >
+                                                           <Clock className="w-3 h-3 text-gray-400" />
+                                                           Later Today
+                                                         </button>
+                                                         <button 
+                                                           onClick={() => handleSmartPostpone(booking, 'tomorrow')}
+                                                           className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg flex items-center gap-2"
+                                                         >
+                                                           <Calendar className="w-3 h-3 text-gray-400" />
+                                                           Tomorrow
+                                                         </button>
+                                                         <div className="h-px bg-gray-100 my-1"></div>
+                                                         <button 
+                                                           onClick={() => handleSmartPostpone(booking, 'custom')}
+                                                           className="w-full text-left px-3 py-2 text-xs font-bold text-primary-600 hover:bg-primary-50 rounded-lg flex items-center gap-2"
+                                                         >
+                                                           <RefreshCw className="w-3 h-3" />
+                                                           Custom Time...
+                                                         </button>
+                                                       </div>
+                                                     </div>
+                                                   )}
+                                                 </div>
+                                              ) : (
+                                                <button
+                                                  onClick={() => archiveBooking(booking.id)}
+                                                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                                  title="Archive (Hide)"
+                                                >
+                                                  <Archive className="w-3.5 h-3.5" />
+                                                </button>
                                               )}
+                                              
                                               <button
                                                 onClick={() => {
                                                   setBookingToEdit(booking);
@@ -1497,6 +1619,7 @@ export default function AdminPage() {
         )}
       </main>
 
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showDeleteDialog}
         title="Cancel Booking"
@@ -1511,6 +1634,7 @@ export default function AdminPage() {
         }}
       />
 
+      {/* Reschedule Dialog */}
       <RescheduleDialog
         isOpen={showRescheduleDialog}
         booking={bookingToReschedule}
@@ -1522,6 +1646,7 @@ export default function AdminPage() {
         }}
       />
 
+      {/* Edit Booking Modal */}
       <EditBookingModal
         isOpen={showEditModal}
         booking={bookingToEdit}
@@ -1532,8 +1657,11 @@ export default function AdminPage() {
         }}
       />
 
+      {/* Notifications Overlay - Compact "Fizzy" Style */}
       {isAuthenticated && adminData && latestBookings.length > 0 && (
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2">
+          
+          {/* Main Notification Card - Only visible when expanded or just 1 */}
           {(showAllNotifications || latestBookings.length === 1) && (
             <div className={`flex flex-col gap-2 transition-all duration-300 ${showAllNotifications ? 'max-h-[70vh] w-[280px] md:w-[320px] overflow-y-auto p-1' : 'w-[280px]'}`}>
               {latestBookings.map((booking, idx) => (
@@ -1574,6 +1702,7 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Controls - The "Fizzy" Part */}
           <div className="flex items-center gap-2">
             {latestBookings.length > 1 && !showAllNotifications && (
               <div className="flex -space-x-2 mr-1">
