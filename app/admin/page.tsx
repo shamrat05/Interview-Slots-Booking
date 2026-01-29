@@ -30,13 +30,19 @@ import {
   Link,
   Settings,
   LayoutDashboard,
-  Search
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Maximize2,
+  Minimize2,
+  ArrowUpDown,
+  History
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ScheduleManager from '@/components/ScheduleManager';
 import ConfigManager from '@/components/ConfigManager';
 import { isPastSlotEnd } from '@/lib/utils';
-import { isSameDay } from 'date-fns';
+import { isSameDay, format, parseISO } from 'date-fns';
 
 const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
   const parts = time.split(':');
@@ -457,6 +463,11 @@ export default function AdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
+  
+  // New States for View Options
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [sortAsc, setSortAsc] = useState(true);
+  const [showPastBookings, setShowPastBookings] = useState(false);
 
   useEffect(() => {
     // Load dismissed notifications from local storage
@@ -496,7 +507,6 @@ export default function AdminPage() {
     if (storedAuth === 'true' && storedSecret) {
       setIsAuthenticated(true);
       setPassword(storedSecret);
-      // We'll call fetchBookings and fetchConfig in a separate effect or after setting password
     }
   }, []);
 
@@ -542,7 +552,6 @@ export default function AdminPage() {
       const response = await fetch('/api/slots');
       const data = await response.json();
       if (data.success) {
-        // Show ALL slots in the reschedule dialog (including booked/blocked ones)
         setAvailableSlots(data.data.slots);
       }
     } catch (error) {
@@ -674,7 +683,6 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Optimistic update
         setAdminData(prev => {
           if (!prev) return null;
           return {
@@ -709,7 +717,6 @@ export default function AdminPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Optimistic update
         setAdminData(prev => {
           if (!prev) return null;
           return {
@@ -729,7 +736,7 @@ export default function AdminPage() {
 
   const updateManualLink = async (booking: AdminBooking) => {
     const manualLink = window.prompt('Enter meeting link manually:', booking.meetLink || 'https://');
-    if (manualLink === null) return; // Cancelled
+    if (manualLink === null) return; 
 
     try {
       const response = await fetch(
@@ -816,7 +823,6 @@ export default function AdminPage() {
     const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
     const template = config?.whatsappTemplate || defaultTemplate;
     
-    // Get day name
     const dateObj = new Date(booking.slotDate);
     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -889,7 +895,26 @@ export default function AdminPage() {
     XLSX.writeFile(wb, `interview-bookings-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Filter and group bookings
+  const toggleDate = (date: string) => {
+    const newSet = new Set(expandedDates);
+    if (newSet.has(date)) {
+      newSet.delete(date);
+    } else {
+      newSet.add(date);
+    }
+    setExpandedDates(newSet);
+  };
+
+  const toggleAllDates = () => {
+    if (!adminData) return;
+    const allDates = Object.keys(groupedBookings);
+    if (expandedDates.size === allDates.length) {
+      setExpandedDates(new Set());
+    } else {
+      setExpandedDates(new Set(allDates));
+    }
+  };
+
   const filteredBookings = adminData?.bookings.filter(booking => {
     const search = searchTerm.toLowerCase();
     return (
@@ -901,13 +926,19 @@ export default function AdminPage() {
     );
   }) || [];
 
-  const groupedBookings = filteredBookings.reduce((groups, booking) => {
+  let groupedBookings = filteredBookings.reduce((groups, booking) => {
     if (!groups[booking.slotDate]) {
       groups[booking.slotDate] = [];
     }
     groups[booking.slotDate].push(booking);
     return groups;
   }, {} as Record<string, AdminBooking[]>);
+
+  const sortedDates = Object.keys(groupedBookings).sort((a, b) => {
+    return sortAsc 
+      ? new Date(a).getTime() - new Date(b).getTime()
+      : new Date(b).getTime() - new Date(a).getTime();
+  });
 
   if (!isAuthenticated) {
     return (
@@ -984,11 +1015,9 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Branding - Compact on mobile */}
             <div className="flex items-center gap-2 md:gap-3">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -999,9 +1028,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-1 md:gap-3">
-              {/* Desktop Export Buttons / Mobile Icon Buttons */}
               <div className="flex items-center bg-gray-100/50 rounded-lg p-1">
                 <button
                   onClick={exportToCSV}
@@ -1025,7 +1052,6 @@ export default function AdminPage() {
 
               <div className="h-6 w-px bg-gray-300 mx-1"></div>
 
-              {/* Back to Site - Icon only on mobile */}
               <a
                 href="/"
                 className="p-2 md:px-3 md:py-2 text-gray-500 hover:text-gray-800 transition-colors"
@@ -1035,7 +1061,6 @@ export default function AdminPage() {
                 <span className="hidden md:inline text-sm font-medium">Site</span>
               </a>
 
-              {/* Logout - Safe from screen edge */}
               <button
                 onClick={handleLogout}
                 className="ml-1 p-2 md:px-4 md:py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-red-100 flex items-center gap-2"
@@ -1049,10 +1074,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-        
-        {/* Navigation Tabs - Scrollable on mobile */}
         <div className="flex border-b border-gray-200 mb-6 md:mb-8 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => setActiveTab('bookings')}
@@ -1091,7 +1113,6 @@ export default function AdminPage() {
 
         {activeTab === 'bookings' ? (
           <>
-            {/* Stats Cards - Optimized for Mobile */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3">
@@ -1143,9 +1164,8 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Search Bar - Sticky on Mobile */}
-            <div className="mb-6 sticky top-[4.5rem] md:static z-20">
-              <div className="relative">
+            <div className="mb-6 flex flex-col md:flex-row gap-4 sticky top-[4.5rem] md:static z-20">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
@@ -1155,9 +1175,49 @@ export default function AdminPage() {
                   className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-md md:shadow-sm transition-all text-sm"
                 />
               </div>
+              <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+                <button
+                  onClick={toggleAllDates}
+                  className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold whitespace-nowrap"
+                  title={expandedDates.size === Object.keys(groupedBookings).length ? "Collapse All" : "Expand All"}
+                >
+                  {expandedDates.size === Object.keys(groupedBookings).length ? (
+                    <>
+                      <Minimize2 className="w-4 h-4" />
+                      Collapse All
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="w-4 h-4" />
+                      Expand All
+                    </>
+                  )}
+                </button>
+                <div className="h-6 w-px bg-gray-200"></div>
+                <button
+                  onClick={() => setSortAsc(!sortAsc)}
+                  className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold whitespace-nowrap"
+                  title="Sort Date"
+                >
+                   <ArrowUpDown className="w-4 h-4" />
+                   {sortAsc ? 'Oldest First' : 'Newest First'}
+                </button>
+                <div className="h-6 w-px bg-gray-200"></div>
+                <button
+                  onClick={() => setShowPastBookings(!showPastBookings)}
+                  className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold whitespace-nowrap ${
+                    showPastBookings 
+                      ? 'bg-gray-100 text-gray-900' 
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  title="Toggle Finished Bookings"
+                >
+                   <History className="w-4 h-4" />
+                   Show Finished
+                </button>
+              </div>
             </div>
 
-            {/* Bookings List */}
             {isLoading ? (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <Loader2 className="w-8 h-8 text-primary-600 animate-spin mx-auto mb-4" />
@@ -1170,215 +1230,263 @@ export default function AdminPage() {
                 <p className="text-gray-500">When applicants book slots, they will appear here.</p>
               </div>
             ) : (
-              <div className="space-y-4 md:space-y-6">
-                {Object.entries(groupedBookings || {}).map(([date, bookings]) => (
-                  <div key={date} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 md:w-5 h-5 text-primary-600" />
-                        <h3 className="font-semibold text-gray-900 text-sm md:text-base">{date}</h3>
-                      </div>
-                      <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-[10px] md:text-xs font-medium rounded-full">
-                        {bookings.length}
-                      </span>
-                    </div>
-                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {bookings.map((booking) => {
-                        // Calculate Status
-                        const now = new Date();
-                        const slotDate = new Date(booking.slotDate);
-                        const [startH, startM] = booking.slotTime.split(':').map(Number);
-                        const [endH, endM] = booking.slotEndTime.split(':').map(Number);
-                        
-                        const slotStart = new Date(slotDate);
-                        slotStart.setHours(startH, startM, 0, 0);
-                        
-                        const slotEnd = new Date(slotDate);
-                        slotEnd.setHours(endH, endM, 0, 0);
+              <div className="space-y-4">
+                {sortedDates.map((date) => {
+                  const bookings = groupedBookings[date];
+                  const isExpanded = expandedDates.has(date);
+                  
+                  const hasOngoing = bookings.some(b => {
+                     const now = new Date();
+                     const slotDate = new Date(b.slotDate);
+                     const [startH, startM] = b.slotTime.split(':').map(Number);
+                     const [endH, endM] = b.slotEndTime.split(':').map(Number);
+                     const slotStart = new Date(slotDate); slotStart.setHours(startH, startM, 0, 0);
+                     const slotEnd = new Date(slotDate); slotEnd.setHours(endH, endM, 0, 0);
+                     return isSameDay(now, new Date(b.slotDate)) && now >= slotStart && now < slotEnd;
+                  });
+                  const allFinished = bookings.every(b => isPastSlotEnd(b.slotDate, b.slotEndTime));
+                  
+                  let headerClass = "bg-white border-gray-200 hover:border-gray-300";
+                  let textClass = "text-gray-700";
+                  let countClass = "bg-gray-100 text-gray-700";
+                  
+                  if (!isExpanded) {
+                     if (hasOngoing) {
+                       headerClass = "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300";
+                       textClass = "text-emerald-800";
+                       countClass = "bg-emerald-200 text-emerald-800";
+                     } else if (allFinished) {
+                       headerClass = "bg-rose-50 border-rose-200 hover:bg-rose-100 hover:border-rose-300";
+                       textClass = "text-rose-800";
+                       countClass = "bg-rose-200 text-rose-800";
+                     } else {
+                       headerClass = "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300";
+                       textClass = "text-blue-800";
+                       countClass = "bg-blue-200 text-blue-800";
+                     }
+                  }
 
-                        // Adjust logic for "Ongoing" vs "Finished" vs "Upcoming"
-                        // Note: isPastSlotEnd utility already exists but we want precise "Ongoing" check
-                        const isToday = isSameDay(new Date(), new Date(booking.slotDate));
-                        // Simple client-side check. Ideally match server time logic, but this visual cue is fine.
-                        const isOngoing = isToday && now >= slotStart && now < slotEnd;
-                        const isFinished = isPastSlotEnd(booking.slotDate, booking.slotEndTime);
-                        
-                        let status: 'ongoing' | 'finished' | 'upcoming' = 'upcoming';
-                        if (isOngoing) status = 'ongoing';
-                        else if (isFinished) status = 'finished';
+                  const visibleBookings = isExpanded 
+                    ? bookings.filter(b => showPastBookings || !isPastSlotEnd(b.slotDate, b.slotEndTime))
+                    : [];
 
-                        // Styles
-                        const styles = {
-                          ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 shadow-sm',
-                          finished: 'bg-rose-50/30 border-rose-100/50 opacity-60 grayscale-[0.2]',
-                          upcoming: 'bg-blue-50 border-blue-200 shadow-sm'
-                        };
-
-                        const badgeStyles = {
-                          ongoing: 'bg-emerald-100 text-emerald-700',
-                          finished: 'bg-rose-100/50 text-rose-600/70',
-                          upcoming: 'bg-blue-100 text-blue-700'
-                        };
-
-                        const iconColor = {
-                          ongoing: 'text-emerald-600 animate-pulse',
-                          finished: 'text-rose-300',
-                          upcoming: 'text-blue-500'
-                        };
-
-                        return (
-                          <div
-                            key={booking.id}
-                            className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} ${status !== 'finished' ? 'hover:shadow-md' : 'hover:opacity-80'}`}
-                          >
-                            {/* Header: Time & Status */}
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <div className={`flex items-center gap-1.5 font-bold text-lg ${
-                                  status === 'ongoing' ? 'text-emerald-900' : status === 'finished' ? 'text-gray-500' : 'text-gray-900'
-                                }`}>
-                                  <DynamicClockIcon 
-                                    time={booking.slotTime} 
-                                    className={`w-4 h-4 ${iconColor[status]}`} 
-                                  />
-                                  {booking.slotTime}
-                                </div>
-                                <div className="text-xs text-gray-400 font-medium ml-6">
-                                  to {booking.slotEndTime}
-                                </div>
-                              </div>
-                              <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
-                                {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
-                                {status}
-                              </div>
-                            </div>
-
-                            {/* Candidate Info */}
-                            <div className="space-y-1">
-                                <div className={`font-bold truncate ${status === 'finished' ? 'text-gray-500' : 'text-gray-900'}`} title={booking.name}>
-                                  {booking.name}
-                                </div>
-                                <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <Mail className="w-3 h-3 opacity-50" />
-                                  {booking.email}
-                                </div>
-                                <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <Phone className="w-3 h-3 opacity-50" />
-                                  {booking.whatsapp}
-                                </div>
-                            </div>
-
-                            {/* Links & Actions Section */}
-                            <div className={`pt-3 border-t flex flex-col gap-2 ${status === 'finished' ? 'border-rose-100/30' : 'border-gray-200/50'}`}>
-                                {/* Meet Link Row */}
-                                <div className="flex items-center justify-between min-h-[24px]">
-                                    {booking.meetLink ? (
-                                      <a 
-                                        href={booking.meetLink} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className={`flex items-center gap-1.5 text-xs font-bold truncate max-w-[150px] ${
-                                          status === 'finished' ? 'text-gray-400 hover:text-gray-600' : 'text-primary-600 hover:underline'
-                                        }`}
-                                      >
-                                        <Video className="w-3.5 h-3.5" />
-                                        {status === 'finished' ? 'Meeting Ended' : 'Join Meet'}
-                                      </a>
-                                    ) : !isFinished ? (
-                                      <button
-                                        onClick={() => generateMeetLink(booking)}
-                                        className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
-                                      >
-                                        <Video className="w-3.5 h-3.5" />
-                                        Generate Link
-                                      </button>
-                                    ) : (
-                                       <span className="text-[10px] text-gray-400 italic">No link recorded</span>
-                                    )}
-
-                                    {/* Manual Link Edit */}
-                                    {!isFinished && (
-                                       <button
-                                          onClick={() => updateManualLink(booking)}
-                                          className="p-1 text-gray-400 hover:text-gray-600"
-                                          title={booking.meetLink ? "Edit Link" : "Add Link Manually"}
-                                        >
-                                          {booking.meetLink ? <Edit className="w-3 h-3" /> : <Link className="w-3 h-3" />}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Action Buttons Row */}
-                                <div className="flex items-center justify-between gap-2 mt-1">
-                                    <div className="flex items-center gap-1">
-                                      {/* WhatsApp Status Toggle */}
-                                      <button
-                                        onClick={() => toggleWhatsAppSent(booking)}
-                                        className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
-                                          status === 'finished' ? 'opacity-50 grayscale' : ''
-                                        } ${
-                                          booking.whatsappSent 
-                                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                                        }`}
-                                        title={booking.whatsappSent ? "Mark as Not Sent" : "Mark as Sent"}
-                                      >
-                                         {booking.whatsappSent ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                                      </button>
-                                      
-                                      {/* Send WA */}
-                                      <button
-                                        onClick={() => sendWhatsAppConfirmation(booking)}
-                                        className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${
-                                          status === 'finished' ? 'opacity-50 grayscale' : ''
-                                        }`}
-                                        title="Send WhatsApp Message"
-                                      >
-                                        <MessageCircle className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => {
-                                          setBookingToEdit(booking);
-                                          setShowEditModal(true);
-                                        }}
-                                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-md"
-                                        title="Edit Details"
-                                      >
-                                        <Edit className="w-3.5 h-3.5" />
-                                      </button>
-                                      {!isFinished && (
-                                        <button
-                                          onClick={() => handleRescheduleClick(booking)}
-                                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-                                          title="Reschedule"
-                                        >
-                                          <RefreshCw className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => handleDeleteClick(booking)}
-                                        disabled={deletingId === booking.id}
-                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-                                        title="Delete/Cancel"
-                                      >
-                                        {deletingId === booking.id ? (
-                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        )}
-                                      </button>
-                                    </div>
-                                </div>
-                            </div>
+                  return (
+                    <div key={date} className={`rounded-xl border overflow-hidden shadow-sm transition-all ${headerClass}`}>
+                      <button 
+                        onClick={() => toggleDate(date)}
+                        className="w-full px-4 md:px-6 py-3 md:py-4 flex items-center justify-between outline-none"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center gap-2 ${textClass}`}>
+                             <Calendar className="w-5 h-5" />
+                             <span className="font-bold text-lg uppercase font-mono">{format(parseISO(date), 'EEE')}</span>
+                             <span className="font-medium text-gray-600 ml-1">{format(parseISO(date), 'MMM d, yyyy')}</span>
                           </div>
-                        );
-                      })}
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${countClass}`}>
+                             {bookings.length}
+                           </span>
+                           {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="bg-white border-t border-gray-100 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-slide-up">
+                          {visibleBookings.length === 0 ? (
+                            <div className="col-span-full py-8 text-center text-gray-400 italic text-sm">
+                               {bookings.length > 0 ? "All bookings for this day are finished." : "No active bookings."}
+                               {!showPastBookings && bookings.length > 0 && (
+                                 <button onClick={() => setShowPastBookings(true)} className="ml-2 text-primary-600 hover:underline">Show them</button>
+                               )}
+                            </div>
+                          ) : (
+                            visibleBookings.map((booking) => {
+                                const now = new Date();
+                                const slotDate = new Date(booking.slotDate);
+                                const [startH, startM] = booking.slotTime.split(':').map(Number);
+                                const [endH, endM] = booking.slotEndTime.split(':').map(Number);
+                                
+                                const slotStart = new Date(slotDate);
+                                slotStart.setHours(startH, startM, 0, 0);
+                                
+                                const slotEnd = new Date(slotDate);
+                                slotEnd.setHours(endH, endM, 0, 0);
+
+                                const isToday = isSameDay(new Date(), new Date(booking.slotDate));
+                                const isOngoing = isToday && now >= slotStart && now < slotEnd;
+                                const isFinished = isPastSlotEnd(booking.slotDate, booking.slotEndTime);
+                                
+                                let status: 'ongoing' | 'finished' | 'upcoming' = 'upcoming';
+                                if (isOngoing) status = 'ongoing';
+                                else if (isFinished) status = 'finished';
+
+                                const styles = {
+                                  ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 shadow-sm',
+                                  finished: 'bg-rose-50/30 border-rose-100/50 opacity-60 grayscale-[0.2]',
+                                  upcoming: 'bg-blue-50 border-blue-200 shadow-sm'
+                                };
+
+                                const badgeStyles = {
+                                  ongoing: 'bg-emerald-100 text-emerald-700',
+                                  finished: 'bg-rose-100/50 text-rose-600/70',
+                                  upcoming: 'bg-blue-100 text-blue-700'
+                                };
+
+                                const iconColor = {
+                                  ongoing: 'text-emerald-600 animate-pulse',
+                                  finished: 'text-rose-300',
+                                  upcoming: 'text-blue-500'
+                                };
+
+                                return (
+                                  <div
+                                    key={booking.id}
+                                    className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} ${status !== 'finished' ? 'hover:shadow-md' : 'hover:opacity-80'}`}
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div>
+                                        <div className={`flex items-center gap-1.5 font-bold text-lg ${
+                                          status === 'ongoing' ? 'text-emerald-900' : status === 'finished' ? 'text-gray-500' : 'text-gray-900'
+                                        }`}>
+                                          <DynamicClockIcon 
+                                            time={booking.slotTime} 
+                                            className={`w-4 h-4 ${iconColor[status]}`} 
+                                          />
+                                          {booking.slotTime}
+                                        </div>
+                                        <div className="text-xs text-gray-400 font-medium ml-6">
+                                          to {booking.slotEndTime}
+                                        </div>
+                                      </div>
+                                      <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
+                                        {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
+                                        {status}
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <div className={`font-bold truncate ${status === 'finished' ? 'text-gray-500' : 'text-gray-900'}`} title={booking.name}>
+                                          {booking.name}
+                                        </div>
+                                        <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                          <Mail className="w-3 h-3 opacity-50" />
+                                          {booking.email}
+                                        </div>
+                                        <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                          <Phone className="w-3 h-3 opacity-50" />
+                                          {booking.whatsapp}
+                                        </div>
+                                    </div>
+
+                                    <div className={`pt-3 border-t flex flex-col gap-2 ${status === 'finished' ? 'border-rose-100/30' : 'border-gray-200/50'}`}>
+                                        <div className="flex items-center justify-between min-h-[24px]">
+                                            {booking.meetLink ? (
+                                              <a 
+                                                href={booking.meetLink} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className={`flex items-center gap-1.5 text-xs font-bold truncate max-w-[150px] ${
+                                                  status === 'finished' ? 'text-gray-400 hover:text-gray-600' : 'text-primary-600 hover:underline'
+                                                }`}
+                                              >
+                                                <Video className="w-3.5 h-3.5" />
+                                                {status === 'finished' ? 'Meeting Ended' : 'Join Meet'}
+                                              </a>
+                                            ) : !isFinished ? (
+                                              <button
+                                                onClick={() => generateMeetLink(booking)}
+                                                className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
+                                              >
+                                                <Video className="w-3.5 h-3.5" />
+                                                Generate Link
+                                              </button>
+                                            ) : (
+                                               <span className="text-[10px] text-gray-400 italic">No link recorded</span>
+                                            )}
+
+                                            {!isFinished && (
+                                               <button
+                                                  onClick={() => updateManualLink(booking)}
+                                                  className="p-1 text-gray-400 hover:text-gray-600"
+                                                  title={booking.meetLink ? "Edit Link" : "Add Link Manually"}
+                                                >
+                                                  {booking.meetLink ? <Edit className="w-3 h-3" /> : <Link className="w-3 h-3" />}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2 mt-1">
+                                            <div className="flex items-center gap-1">
+                                              <button
+                                                onClick={() => toggleWhatsAppSent(booking)}
+                                                className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
+                                                  status === 'finished' ? 'opacity-50 grayscale' : ''
+                                                } ${
+                                                  booking.whatsappSent 
+                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                }`}
+                                                title={booking.whatsappSent ? "Mark as Not Sent" : "Mark as Sent"}
+                                              >
+                                                 {booking.whatsappSent ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                                              </button>
+                                              
+                                              <button
+                                                onClick={() => sendWhatsAppConfirmation(booking)}
+                                                className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${
+                                                  status === 'finished' ? 'opacity-50 grayscale' : ''
+                                                }`}
+                                                title="Send WhatsApp Message"
+                                              >
+                                                <MessageCircle className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+
+                                            <div className="flex items-center gap-1">
+                                              {!isFinished && (
+                                                 <button
+                                                  onClick={() => handleRescheduleClick(booking)}
+                                                  className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md"
+                                                  title="Postpone / Reschedule"
+                                                 >
+                                                   <Clock className="w-3.5 h-3.5" />
+                                                 </button>
+                                              )}
+                                              <button
+                                                onClick={() => {
+                                                  setBookingToEdit(booking);
+                                                  setShowEditModal(true);
+                                                }}
+                                                className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-md"
+                                                title="Edit Details"
+                                              >
+                                                <Edit className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteClick(booking)}
+                                                disabled={deletingId === booking.id}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                                                title="Delete/Cancel"
+                                              >
+                                                {deletingId === booking.id ? (
+                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                )}
+                                              </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                  </div>
+                                );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -1389,7 +1497,6 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showDeleteDialog}
         title="Cancel Booking"
@@ -1404,7 +1511,6 @@ export default function AdminPage() {
         }}
       />
 
-      {/* Reschedule Dialog */}
       <RescheduleDialog
         isOpen={showRescheduleDialog}
         booking={bookingToReschedule}
@@ -1416,7 +1522,6 @@ export default function AdminPage() {
         }}
       />
 
-      {/* Edit Booking Modal */}
       <EditBookingModal
         isOpen={showEditModal}
         booking={bookingToEdit}
@@ -1427,11 +1532,8 @@ export default function AdminPage() {
         }}
       />
 
-      {/* Notifications Overlay - Compact "Fizzy" Style */}
       {isAuthenticated && adminData && latestBookings.length > 0 && (
         <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-2">
-          
-          {/* Main Notification Card - Only visible when expanded or just 1 */}
           {(showAllNotifications || latestBookings.length === 1) && (
             <div className={`flex flex-col gap-2 transition-all duration-300 ${showAllNotifications ? 'max-h-[70vh] w-[280px] md:w-[320px] overflow-y-auto p-1' : 'w-[280px]'}`}>
               {latestBookings.map((booking, idx) => (
@@ -1472,7 +1574,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Controls - The "Fizzy" Part */}
           <div className="flex items-center gap-2">
             {latestBookings.length > 1 && !showAllNotifications && (
               <div className="flex -space-x-2 mr-1">
