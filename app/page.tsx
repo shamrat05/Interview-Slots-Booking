@@ -209,40 +209,59 @@ export default function Home() {
         {/* Slots Grid */}
         {currentSlots.length > 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-500" />
               {format(new Date(selectedDate), 'EEEE, MMMM d')}
             </h2>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {currentSlots.map((slot) => {
                 const isUnavailable = slot.isBooked || slot.isPast || slot.isBlocked;
+                
+                // Styles based on status
+                const cardStyles = isUnavailable
+                  ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border-gray-200 text-gray-900 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 hover:shadow-md cursor-pointer group';
+                
+                const iconColor = isUnavailable 
+                    ? 'text-gray-300' 
+                    : 'text-gray-400 group-hover:text-primary-500 transition-colors';
+
                 return (
                   <button
                     key={slot.id}
                     onClick={() => handleSlotClick(slot)}
                     disabled={isUnavailable}
-                    className={`p-4 rounded-lg border-2 font-medium transition-all ${
-                      isUnavailable
-                        ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-60'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 hover:shadow-md cursor-pointer'
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[90px] relative overflow-hidden ${cardStyles}`}
                   >
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center gap-1.5 mb-1">
                       {slot.isBooked ? (
-                        <CheckCircle className="w-4 h-4 text-gray-400" />
+                        <CheckCircle className="w-4 h-4 text-gray-300" />
                       ) : slot.isBlocked ? (
-                        <Lock className="w-4 h-4 text-gray-400" />
+                        <Lock className="w-4 h-4 text-gray-300" />
                       ) : (
                         <DynamicClockIcon 
                           time={slot.startTime} 
-                          className={`w-4 h-4 ${slot.isPast ? 'text-gray-400' : 'text-primary-500'}`} 
+                          className={`w-4 h-4 ${iconColor}`} 
                         />
                       )}
-                      <span>{slot.startTime}</span>
+                      <span className={`font-bold text-lg ${isUnavailable ? 'text-gray-400' : 'text-gray-700 group-hover:text-primary-700'}`}>
+                        {slot.startTime}
+                      </span>
                     </div>
-                    <div className="mt-2 text-[10px] uppercase tracking-wider font-bold">
-                      {slot.isBooked ? 'Booked' : slot.isPast ? 'Passed' : slot.isBlocked ? 'Unavailable' : <span className="text-primary-600">Available</span>}
+                    
+                    <div className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                      isUnavailable 
+                        ? 'bg-gray-100 text-gray-400' 
+                        : 'bg-primary-50 text-primary-700 group-hover:bg-primary-100'
+                    }`}>
+                      {slot.isBooked ? 'Booked' : slot.isPast ? 'Ended' : slot.isBlocked ? 'Unavailable' : 'Available'}
                     </div>
+
+                    {/* Active Indicator for available slots */}
+                    {!isUnavailable && (
+                      <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                   </button>
                 );
               })}

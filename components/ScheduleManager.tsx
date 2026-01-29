@@ -300,97 +300,133 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
             {slots
               .filter(slot => !showOnlyAvailable || (!slot.isBooked && !slot.isBlocked && !slot.isPast))
               .map((slot) => {
-              const status = slot.isBooked ? 'booked' : slot.isPast ? 'passed' : slot.isBlocked ? 'blocked' : 'available';
+              // Calculate status
+              const now = new Date();
+              // Create date objects for slot start and end
+              const slotDate = new Date(slot.date);
+              const [startH, startM] = slot.startTime.split(':').map(Number);
+              const [endH, endM] = slot.endTime.split(':').map(Number);
+              
+              const slotStart = new Date(slotDate);
+              slotStart.setHours(startH, startM, 0, 0);
+              
+              const slotEnd = new Date(slotDate);
+              slotEnd.setHours(endH, endM, 0, 0);
+
+              // Check if ongoing (only for today)
+              const isToday = isSameDay(new Date(), new Date(slot.date));
+              // We use bdNow logic from parent but for simple client comparison new Date() is local browser time
+              // Assuming admin is viewing in same timezone or relative time works. 
+              // Better to use the passed `bdNow` logic if consistent, but `isPast` is already computed by backend.
+              // Let's rely on isPast for "Finished" and refine "Ongoing".
+              
+              // We'll use the current browser time for "Ongoing" visual check as it's a UI enhancement
+              const currentTime = new Date(); 
+              const isOngoing = isToday && currentTime >= slotStart && currentTime < slotEnd;
+
+              let status: 'ongoing' | 'finished' | 'upcoming' | 'blocked' | 'available' = 'available';
+              
+              if (slot.isBlocked) status = 'blocked';
+              else if (isOngoing && slot.isBooked) status = 'ongoing';
+              else if (slot.isPast) status = 'finished';
+              else if (slot.isBooked) status = 'upcoming';
+              else status = 'available';
+
+              // Styles map
+              const styles = {
+                ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500',
+                finished: 'bg-gray-50 border-gray-200 opacity-75',
+                upcoming: 'bg-blue-50 border-blue-200',
+                blocked: 'bg-rose-50 border-rose-200 border-dashed',
+                available: 'bg-white border-gray-200 hover:border-primary-400 hover:shadow-md'
+              };
+
+              const badgeStyles = {
+                ongoing: 'bg-emerald-100 text-emerald-700',
+                finished: 'bg-gray-200 text-gray-600',
+                upcoming: 'bg-blue-100 text-blue-700',
+                blocked: 'bg-rose-100 text-rose-700',
+                available: 'bg-green-100 text-green-700'
+              };
               
               return (
                 <div 
                   key={slot.id}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col justify-between h-32 ${
-                    status === 'booked'
-                      ? 'bg-blue-50 border-blue-100 opacity-80'
-                      : status === 'passed'
-                      ? 'bg-gray-100 border-gray-200 opacity-60'
-                      : status === 'blocked'
-                      ? 'bg-gray-50 border-gray-200 border-dashed'
-                      : 'bg-white border-gray-100 hover:border-primary-200 hover:shadow-md'
-                  }`}
+                  className={`p-4 rounded-xl border transition-all flex flex-col justify-between h-[140px] ${styles[status]}`}
                 >
-                  <div className="flex items-start justify-between">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-2">
                     <div>
-                      <div className="flex items-center gap-1.5 text-gray-900 font-bold">
+                      <div className={`flex items-center gap-1.5 font-bold text-lg ${
+                        status === 'ongoing' ? 'text-emerald-900' : 'text-gray-900'
+                      }`}>
                         <DynamicClockIcon 
                           time={slot.startTime} 
-                          className={`w-4 h-4 ${status === 'available' ? 'text-primary-500' : 'text-gray-400'}`} 
+                          className={`w-4 h-4 ${status === 'ongoing' ? 'text-emerald-600 animate-pulse' : 'text-gray-400'}`} 
                         />
                         {formatTimeToAMPM(slot.startTime)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatTimeToAMPM(slot.endTime)}
+                      <div className="text-xs text-gray-500 font-medium">
+                        to {formatTimeToAMPM(slot.endTime)}
                       </div>
                     </div>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                      status === 'booked' 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : status === 'passed'
-                        ? 'bg-gray-200 text-gray-600'
-                        : status === 'blocked'
-                        ? 'bg-gray-200 text-gray-600'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
+                    <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
+                      {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
                       {status}
                     </div>
                   </div>
 
-                                      <div className="mt-auto">
-                                      {status === 'booked' ? (
-                                        <div className="text-xs text-blue-700 font-medium truncate">
-                                           User: {slot.booking?.name || 'Booked'}
-                                        </div>
-                                      ) : status === 'passed' ? (
-                                        <div className="text-xs text-gray-500 italic">
-                                          Time passed
-                                        </div>
-                                      ) : (
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <button
-                                            onClick={() => toggleBlock(slot)}
-                                            disabled={processingId === slot.id}
-                                            className={`py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${
-                                              status === 'blocked'
-                                                ? 'bg-gray-800 text-white hover:bg-gray-900'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                            }`}
-                                          >
-                                            {processingId === slot.id ? (
-                                              <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : status === 'blocked' ? (
-                                              <>
-                                                <Unlock className="w-3 h-3" />
-                                                Unblock
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Lock className="w-3 h-3" />
-                                                Block
-                                              </>
-                                            )}
-                                          </button>
-                                          
-                                          {(status === 'available' || status === 'blocked') && (
-                                            <button
-                                              onClick={() => {
-                                                setSelectedSlotForManual(slot);
-                                                setShowManualModal(true);
-                                              }}
-                                              className="py-1.5 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-primary-100 transition-colors"
-                                            >
-                                              <UserPlus className="w-3 h-3" />
-                                              Book
-                                            </button>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>                </div>
+                  {/* Content / Actions */}
+                  <div className="mt-auto">
+                    {status === 'ongoing' || status === 'upcoming' || status === 'finished' ? (
+                      <div className="bg-white/50 rounded-lg p-2 border border-black/5">
+                        <div className="text-[10px] text-gray-500 uppercase font-bold mb-0.5">Candidate</div>
+                        <div className="text-sm font-bold text-gray-900 truncate" title={slot.booking?.name}>
+                           {slot.booking?.name || 'Unknown'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => toggleBlock(slot)}
+                          disabled={processingId === slot.id}
+                          className={`py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${
+                            status === 'blocked'
+                              ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {processingId === slot.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : status === 'blocked' ? (
+                            <>
+                              <Unlock className="w-3 h-3" />
+                              Unblock
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-3 h-3" />
+                              Block
+                            </>
+                          )}
+                        </button>
+                        
+                        {(status === 'available' || status === 'blocked') && (
+                          <button
+                            onClick={() => {
+                              setSelectedSlotForManual(slot);
+                              setShowManualModal(true);
+                            }}
+                            className="py-1.5 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-primary-100 transition-colors"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            Book
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -413,18 +449,26 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
         />
       )}
       
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center gap-4 text-xs text-gray-500">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-white border border-gray-300 rounded"></div>
+          <div className="w-3 h-3 bg-white border border-gray-300 rounded shadow-sm"></div>
           Available
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-blue-100 rounded"></div>
-          Booked
+          <div className="w-3 h-3 bg-emerald-100 border border-emerald-500 rounded shadow-sm"></div>
+          Ongoing (Active)
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-gray-200 border border-gray-300 border-dashed rounded"></div>
-          Blocked (Hidden from Users)
+          <div className="w-3 h-3 bg-blue-50 border border-blue-200 rounded shadow-sm"></div>
+          Upcoming
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gray-50 border border-gray-200 rounded shadow-sm"></div>
+          Finished
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-rose-50 border border-rose-200 border-dashed rounded shadow-sm"></div>
+          Blocked
         </div>
       </div>
     </div>
