@@ -1209,33 +1209,33 @@ export default function AdminPage() {
 
                         // Styles
                         const styles = {
-                          ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500',
-                          finished: 'bg-gray-50 border-gray-200 opacity-75',
-                          upcoming: 'bg-blue-50 border-blue-200'
+                          ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 shadow-sm',
+                          finished: 'bg-rose-50/30 border-rose-100/50 opacity-60 grayscale-[0.2]',
+                          upcoming: 'bg-blue-50 border-blue-200 shadow-sm'
                         };
 
                         const badgeStyles = {
                           ongoing: 'bg-emerald-100 text-emerald-700',
-                          finished: 'bg-gray-200 text-gray-600',
+                          finished: 'bg-rose-100/50 text-rose-600/70',
                           upcoming: 'bg-blue-100 text-blue-700'
                         };
 
                         const iconColor = {
                           ongoing: 'text-emerald-600 animate-pulse',
-                          finished: 'text-gray-400',
+                          finished: 'text-rose-300',
                           upcoming: 'text-blue-500'
                         };
 
                         return (
                           <div
                             key={booking.id}
-                            className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} hover:shadow-md`}
+                            className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} ${status !== 'finished' ? 'hover:shadow-md' : 'hover:opacity-80'}`}
                           >
                             {/* Header: Time & Status */}
                             <div className="flex items-start justify-between">
                               <div>
                                 <div className={`flex items-center gap-1.5 font-bold text-lg ${
-                                  status === 'ongoing' ? 'text-emerald-900' : 'text-gray-900'
+                                  status === 'ongoing' ? 'text-emerald-900' : status === 'finished' ? 'text-gray-500' : 'text-gray-900'
                                 }`}>
                                   <DynamicClockIcon 
                                     time={booking.slotTime} 
@@ -1243,7 +1243,7 @@ export default function AdminPage() {
                                   />
                                   {booking.slotTime}
                                 </div>
-                                <div className="text-xs text-gray-500 font-medium ml-6">
+                                <div className="text-xs text-gray-400 font-medium ml-6">
                                   to {booking.slotEndTime}
                                 </div>
                               </div>
@@ -1255,21 +1255,21 @@ export default function AdminPage() {
 
                             {/* Candidate Info */}
                             <div className="space-y-1">
-                                <div className="font-bold text-gray-900 truncate" title={booking.name}>
+                                <div className={`font-bold truncate ${status === 'finished' ? 'text-gray-500' : 'text-gray-900'}`} title={booking.name}>
                                   {booking.name}
                                 </div>
-                                <div className="text-xs text-gray-600 truncate flex items-center gap-1.5">
-                                  <Mail className="w-3 h-3 text-gray-400" />
+                                <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <Mail className="w-3 h-3 opacity-50" />
                                   {booking.email}
                                 </div>
-                                <div className="text-xs text-gray-600 truncate flex items-center gap-1.5">
-                                  <Phone className="w-3 h-3 text-gray-400" />
+                                <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  <Phone className="w-3 h-3 opacity-50" />
                                   {booking.whatsapp}
                                 </div>
                             </div>
 
                             {/* Links & Actions Section */}
-                            <div className="pt-3 border-t border-gray-200/50 flex flex-col gap-2">
+                            <div className={`pt-3 border-t flex flex-col gap-2 ${status === 'finished' ? 'border-rose-100/30' : 'border-gray-200/50'}`}>
                                 {/* Meet Link Row */}
                                 <div className="flex items-center justify-between min-h-[24px]">
                                     {booking.meetLink ? (
@@ -1277,10 +1277,12 @@ export default function AdminPage() {
                                         href={booking.meetLink} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 text-xs font-bold text-primary-600 hover:underline truncate max-w-[150px]"
+                                        className={`flex items-center gap-1.5 text-xs font-bold truncate max-w-[150px] ${
+                                          status === 'finished' ? 'text-gray-400 hover:text-gray-600' : 'text-primary-600 hover:underline'
+                                        }`}
                                       >
                                         <Video className="w-3.5 h-3.5" />
-                                        Join Meet
+                                        {status === 'finished' ? 'Meeting Ended' : 'Join Meet'}
                                       </a>
                                     ) : !isFinished ? (
                                       <button
@@ -1291,7 +1293,7 @@ export default function AdminPage() {
                                         Generate Link
                                       </button>
                                     ) : (
-                                       <span className="text-[10px] text-gray-400 italic">No link generated</span>
+                                       <span className="text-[10px] text-gray-400 italic">No link recorded</span>
                                     )}
 
                                     {/* Manual Link Edit */}
@@ -1313,6 +1315,8 @@ export default function AdminPage() {
                                       <button
                                         onClick={() => toggleWhatsAppSent(booking)}
                                         className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
+                                          status === 'finished' ? 'opacity-50 grayscale' : ''
+                                        } ${
                                           booking.whatsappSent 
                                             ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                                             : 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -1325,7 +1329,9 @@ export default function AdminPage() {
                                       {/* Send WA */}
                                       <button
                                         onClick={() => sendWhatsAppConfirmation(booking)}
-                                        className="w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
+                                        className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${
+                                          status === 'finished' ? 'opacity-50 grayscale' : ''
+                                        }`}
                                         title="Send WhatsApp Message"
                                       >
                                         <MessageCircle className="w-3.5 h-3.5" />
@@ -1338,23 +1344,25 @@ export default function AdminPage() {
                                           setBookingToEdit(booking);
                                           setShowEditModal(true);
                                         }}
-                                        className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md"
+                                        className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-md"
                                         title="Edit Details"
                                       >
                                         <Edit className="w-3.5 h-3.5" />
                                       </button>
-                                      <button
-                                        onClick={() => handleRescheduleClick(booking)}
-                                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-                                        title="Reschedule"
-                                      >
-                                        <RefreshCw className="w-3.5 h-3.5" />
-                                      </button>
+                                      {!isFinished && (
+                                        <button
+                                          onClick={() => handleRescheduleClick(booking)}
+                                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                          title="Reschedule"
+                                        >
+                                          <RefreshCw className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                       <button
                                         onClick={() => handleDeleteClick(booking)}
                                         disabled={deletingId === booking.id}
-                                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md"
-                                        title="Cancel Booking"
+                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                                        title="Delete/Cancel"
                                       >
                                         {deletingId === booking.id ? (
                                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
