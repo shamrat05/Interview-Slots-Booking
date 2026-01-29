@@ -6,6 +6,8 @@ import {
   Users,
   Calendar,
   Clock,
+  Clock1, Clock2, Clock3, Clock4, Clock5, Clock6,
+  Clock7, Clock8, Clock9, Clock10, Clock11, Clock12,
   Phone,
   Mail,
   Trash2,
@@ -34,6 +36,25 @@ import * as XLSX from 'xlsx';
 import ScheduleManager from '@/components/ScheduleManager';
 import ConfigManager from '@/components/ConfigManager';
 import { isPastSlotEnd } from '@/lib/utils';
+import { isSameDay } from 'date-fns';
+
+const DynamicClockIcon = ({ time, className }: { time: string, className?: string }) => {
+  const parts = time.split(':');
+  let hour = parseInt(parts[0], 10);
+  const minutes = parseInt(parts[1], 10);
+  
+  // Round to nearest hour for the icon
+  if (minutes >= 30) hour += 1;
+  
+  hour = hour % 12 || 12;
+  
+  const icons: Record<number, any> = {
+    1: Clock1, 2: Clock2, 3: Clock3, 4: Clock4, 5: Clock5, 6: Clock6,
+    7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12
+  };
+  const Icon = icons[hour] || Clock;
+  return <Icon className={className} />;
+};
 
 interface AdminBooking {
   id: string;
@@ -1161,153 +1182,192 @@ export default function AdminPage() {
                         {bookings.length}
                       </span>
                     </div>
-                    <div className="divide-y divide-gray-100">
-                      {bookings.map((booking) => (
-                        <div
-                          key={booking.id}
-                          className={`p-4 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-gray-50 transition-colors gap-4 ${
-                            isPastSlotEnd(booking.slotDate, booking.slotEndTime) ? 'opacity-75' : ''
-                          }`}
-                        >
-                          <div className="flex items-start md:items-center gap-3 md:gap-4">
-                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              isPastSlotEnd(booking.slotDate, booking.slotEndTime) 
-                                ? 'bg-green-100' 
-                                : 'bg-gray-100'
-                            }`}>
-                              {isPastSlotEnd(booking.slotDate, booking.slotEndTime) ? (
-                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-                              ) : (
-                                <Clock className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="font-bold text-gray-900 text-sm md:text-base truncate max-w-[150px] md:max-w-none">{booking.name}</span>
-                                <span className="px-1.5 py-0.5 bg-primary-50 text-primary-700 text-[10px] rounded font-medium whitespace-nowrap">
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {bookings.map((booking) => {
+                        // Calculate Status
+                        const now = new Date();
+                        const slotDate = new Date(booking.slotDate);
+                        const [startH, startM] = booking.slotTime.split(':').map(Number);
+                        const [endH, endM] = booking.slotEndTime.split(':').map(Number);
+                        
+                        const slotStart = new Date(slotDate);
+                        slotStart.setHours(startH, startM, 0, 0);
+                        
+                        const slotEnd = new Date(slotDate);
+                        slotEnd.setHours(endH, endM, 0, 0);
+
+                        // Adjust logic for "Ongoing" vs "Finished" vs "Upcoming"
+                        // Note: isPastSlotEnd utility already exists but we want precise "Ongoing" check
+                        const isToday = isSameDay(new Date(), new Date(booking.slotDate));
+                        // Simple client-side check. Ideally match server time logic, but this visual cue is fine.
+                        const isOngoing = isToday && now >= slotStart && now < slotEnd;
+                        const isFinished = isPastSlotEnd(booking.slotDate, booking.slotEndTime);
+                        
+                        let status: 'ongoing' | 'finished' | 'upcoming' = 'upcoming';
+                        if (isOngoing) status = 'ongoing';
+                        else if (isFinished) status = 'finished';
+
+                        // Styles
+                        const styles = {
+                          ongoing: 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500',
+                          finished: 'bg-gray-50 border-gray-200 opacity-75',
+                          upcoming: 'bg-blue-50 border-blue-200'
+                        };
+
+                        const badgeStyles = {
+                          ongoing: 'bg-emerald-100 text-emerald-700',
+                          finished: 'bg-gray-200 text-gray-600',
+                          upcoming: 'bg-blue-100 text-blue-700'
+                        };
+
+                        const iconColor = {
+                          ongoing: 'text-emerald-600 animate-pulse',
+                          finished: 'text-gray-400',
+                          upcoming: 'text-blue-500'
+                        };
+
+                        return (
+                          <div
+                            key={booking.id}
+                            className={`rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all ${styles[status]} hover:shadow-md`}
+                          >
+                            {/* Header: Time & Status */}
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className={`flex items-center gap-1.5 font-bold text-lg ${
+                                  status === 'ongoing' ? 'text-emerald-900' : 'text-gray-900'
+                                }`}>
+                                  <DynamicClockIcon 
+                                    time={booking.slotTime} 
+                                    className={`w-4 h-4 ${iconColor[status]}`} 
+                                  />
                                   {booking.slotTime}
-                                </span>
+                                </div>
+                                <div className="text-xs text-gray-500 font-medium ml-6">
+                                  to {booking.slotEndTime}
+                                </div>
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1 mt-1 text-[11px] md:text-sm text-gray-500">
-                                <span className="flex items-center gap-1 truncate">
-                                  <Mail className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                              <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
+                                {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
+                                {status}
+                              </div>
+                            </div>
+
+                            {/* Candidate Info */}
+                            <div className="space-y-1">
+                                <div className="font-bold text-gray-900 truncate" title={booking.name}>
+                                  {booking.name}
+                                </div>
+                                <div className="text-xs text-gray-600 truncate flex items-center gap-1.5">
+                                  <Mail className="w-3 h-3 text-gray-400" />
                                   {booking.email}
-                                </span>
-                                <span className="flex items-center gap-1 truncate">
-                                  <Phone className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                </div>
+                                <div className="text-xs text-gray-600 truncate flex items-center gap-1.5">
+                                  <Phone className="w-3 h-3 text-gray-400" />
                                   {booking.whatsapp}
-                                </span>
-                                <span className="flex items-center gap-1 truncate">
-                                  <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                  {booking.joiningPreference}
-                                </span>
-                                {booking.meetLink && (
-                                  <a 
-                                    href={booking.meetLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-primary-600 font-bold hover:underline"
-                                  >
-                                    <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                    Join Meet
-                                  </a>
-                                )}
-                                {!booking.meetLink && !isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => generateMeetLink(booking)}
-                                      className="flex items-center gap-1 text-amber-600 font-bold hover:underline"
-                                      title="Generate Google Meet Link"
-                                    >
-                                      <Video className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                      Gen
-                                    </button>
-                                    <button
-                                      onClick={() => updateManualLink(booking)}
-                                      className="flex items-center gap-1 text-gray-500 font-bold hover:underline"
-                                      title="Add link manually"
-                                    >
-                                      <Link className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                      Manual
-                                    </button>
-                                  </div>
-                                )}
-                                {!booking.meetLink && isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
-                                  <span className="text-[10px] text-gray-400 italic">No link</span>
-                                )}
-                                {booking.meetLink && !isPastSlotEnd(booking.slotDate, booking.slotEndTime) && (
-                                  <button
-                                    onClick={() => updateManualLink(booking)}
-                                    className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-                                    title="Edit link manually"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </div>
-                              <div className="mt-1 flex items-center gap-1 text-[9px] md:text-[10px] text-gray-400">
-                                <span className="bg-gray-100 px-1 py-0.5 rounded">
-                                  Booked: {new Date(booking.bookedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                                </span>
-                              </div>
+                                </div>
+                            </div>
+
+                            {/* Links & Actions Section */}
+                            <div className="pt-3 border-t border-gray-200/50 flex flex-col gap-2">
+                                {/* Meet Link Row */}
+                                <div className="flex items-center justify-between min-h-[24px]">
+                                    {booking.meetLink ? (
+                                      <a 
+                                        href={booking.meetLink} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 text-xs font-bold text-primary-600 hover:underline truncate max-w-[150px]"
+                                      >
+                                        <Video className="w-3.5 h-3.5" />
+                                        Join Meet
+                                      </a>
+                                    ) : !isFinished ? (
+                                      <button
+                                        onClick={() => generateMeetLink(booking)}
+                                        className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline"
+                                      >
+                                        <Video className="w-3.5 h-3.5" />
+                                        Generate Link
+                                      </button>
+                                    ) : (
+                                       <span className="text-[10px] text-gray-400 italic">No link generated</span>
+                                    )}
+
+                                    {/* Manual Link Edit */}
+                                    {!isFinished && (
+                                       <button
+                                          onClick={() => updateManualLink(booking)}
+                                          className="p-1 text-gray-400 hover:text-gray-600"
+                                          title={booking.meetLink ? "Edit Link" : "Add Link Manually"}
+                                        >
+                                          {booking.meetLink ? <Edit className="w-3 h-3" /> : <Link className="w-3 h-3" />}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons Row */}
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      {/* WhatsApp Status Toggle */}
+                                      <button
+                                        onClick={() => toggleWhatsAppSent(booking)}
+                                        className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
+                                          booking.whatsappSent 
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                        }`}
+                                        title={booking.whatsappSent ? "Mark as Not Sent" : "Mark as Sent"}
+                                      >
+                                         {booking.whatsappSent ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                                      </button>
+                                      
+                                      {/* Send WA */}
+                                      <button
+                                        onClick={() => sendWhatsAppConfirmation(booking)}
+                                        className="w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
+                                        title="Send WhatsApp Message"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => {
+                                          setBookingToEdit(booking);
+                                          setShowEditModal(true);
+                                        }}
+                                        className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md"
+                                        title="Edit Details"
+                                      >
+                                        <Edit className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleRescheduleClick(booking)}
+                                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                        title="Reschedule"
+                                      >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteClick(booking)}
+                                        disabled={deletingId === booking.id}
+                                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md"
+                                        title="Cancel Booking"
+                                      >
+                                        {deletingId === booking.id ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                    </div>
+                                </div>
                             </div>
                           </div>
-                          
-                          {/* Actions - Organized for Mobile */}
-                          <div className="flex items-center gap-2 justify-between md:justify-end bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => toggleWhatsAppSent(booking)}
-                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors text-[10px] font-bold ${
-                                  booking.whatsappSent 
-                                    ? 'bg-green-600 text-white' 
-                                    : 'bg-red-500 text-white'
-                                }`}
-                              >
-                                {booking.whatsappSent ? "Sent" : "Pending"}
-                              </button>
-                              <button
-                                onClick={() => sendWhatsAppConfirmation(booking)}
-                                className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                WA
-                              </button>
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => {
-                                  setBookingToEdit(booking);
-                                  setShowEditModal(true);
-                                }}
-                                className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
-                                title="Edit Info"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleRescheduleClick(booking)}
-                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                title="Reschedule"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteClick(booking)}
-                                disabled={deletingId === booking.id}
-                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                              >
-                                {deletingId === booking.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
