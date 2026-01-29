@@ -1316,21 +1316,18 @@ export default function AdminPage() {
                   let textClass = "text-gray-700";
                   let countClass = "bg-gray-100 text-gray-700";
                   
-                  if (!isExpanded) {
-                     if (hasOngoing) {
-                       headerClass = "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300";
-                       textClass = "text-emerald-800";
-                       countClass = "bg-emerald-200 text-emerald-800";
-                     } else if (allFinished) {
-                       headerClass = "bg-rose-50 border-rose-200 hover:bg-rose-100 hover:border-rose-300";
-                       textClass = "text-rose-800";
-                       countClass = "bg-rose-200 text-rose-800";
-                     } else {
-                        // Upcoming / Default
-                       headerClass = "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300";
-                       textClass = "text-blue-800";
-                       countClass = "bg-blue-200 text-blue-800";
-                     }
+                  if (hasOngoing) {
+                    headerClass = "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300";
+                    textClass = "text-emerald-800";
+                    countClass = "bg-emerald-200 text-emerald-800";
+                  } else if (allFinished) {
+                    headerClass = "bg-rose-50 border-rose-200 hover:bg-rose-100 hover:border-rose-300";
+                    textClass = "text-rose-800";
+                    countClass = "bg-rose-200 text-rose-800";
+                  } else {
+                    headerClass = "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300";
+                    textClass = "text-blue-800";
+                    countClass = "bg-blue-200 text-blue-800";
                   }
 
                   // Filter for visibility inside
@@ -1445,9 +1442,21 @@ export default function AdminPage() {
                                           <Mail className="w-3 h-3 opacity-50" />
                                           {booking.email}
                                         </div>
-                                        <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                          <Phone className="w-3 h-3 opacity-50" />
-                                          {booking.whatsapp}
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className={`text-xs truncate flex items-center gap-1.5 ${status === 'finished' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            <Phone className="w-3 h-3 opacity-50" />
+                                            {booking.whatsapp}
+                                          </div>
+                                          <div className={`text-[10px] font-bold flex items-center gap-1 px-1.5 py-0.5 rounded border ${
+                                            status === 'finished' 
+                                              ? 'border-gray-200 text-gray-400' 
+                                              : 'border-primary-100 text-primary-700 bg-primary-50/50'
+                                          }`}>
+                                            <Users className="w-2.5 h-2.5 opacity-70" />
+                                            <span className="truncate max-w-[80px]" title={booking.joiningPreference}>
+                                              {booking.joiningPreference.length > 20 ? booking.joiningPreference.substring(0, 17) + '...' : booking.joiningPreference}
+                                            </span>
+                                          </div>
                                         </div>
                                     </div>
 
