@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
       meetLink: string;
       googleEventId: string;
       _rawStartTime: string;
+      _rawEndTime: string;
     }> = [];
 
     allBookings.forEach((dateBookings, date) => {
