@@ -1303,10 +1303,24 @@ export default function AdminPage() {
                   const isExpanded = expandedDates.has(date);
                   
                   // Logic for Header Color
-                  const now = new Date();
-                  const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
-                  const todayStr = format(bdNow, 'yyyy-MM-dd');
-                  const currentTimeStr = format(bdNow, 'HH:mm');
+                  const { date: todayStr, time: currentTimeStr } = (() => {
+                    const now = new Date();
+                    const formatter = new Intl.DateTimeFormat('en-GB', {
+                      timeZone: 'Asia/Dhaka',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    });
+                    const parts = formatter.formatToParts(now);
+                    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
+                    return {
+                      date: `${getPart('year')}-${getPart('month')}-${getPart('day')}`,
+                      time: `${getPart('hour')}:${getPart('minute')}`
+                    };
+                  })();
 
                   const hasOngoing = bookings.some(b => {
                      return b.slotDate === todayStr && 
@@ -1371,10 +1385,24 @@ export default function AdminPage() {
                           ) : (
                             visibleBookings.map((booking) => {
                                 // Calculate Status
-                                const now = new Date();
-                                const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
-                                const todayStr = format(bdNow, 'yyyy-MM-dd');
-                                const currentTimeStr = format(bdNow, 'HH:mm');
+                                const { date: todayStr, time: currentTimeStr } = (() => {
+                                  const now = new Date();
+                                  const formatter = new Intl.DateTimeFormat('en-GB', {
+                                    timeZone: 'Asia/Dhaka',
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false
+                                  });
+                                  const parts = formatter.formatToParts(now);
+                                  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)?.value || '';
+                                  return {
+                                    date: `${getPart('year')}-${getPart('month')}-${getPart('day')}`,
+                                    time: `${getPart('hour')}:${getPart('minute')}`
+                                  };
+                                })();
 
                                 const isOngoing = booking.slotDate === todayStr && 
                                                   currentTimeStr >= booking._rawStartTime && 
