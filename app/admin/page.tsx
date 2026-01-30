@@ -1369,18 +1369,12 @@ export default function AdminPage() {
                             visibleBookings.map((booking) => {
                                 // Calculate Status
                                 const now = new Date();
-                                const slotDate = new Date(booking.slotDate);
-                                const [startH, startM] = booking.slotTime.split(':').map(Number);
-                                const [endH, endM] = booking.slotEndTime.split(':').map(Number);
-                                
-                                const slotStart = new Date(slotDate);
-                                slotStart.setHours(startH, startM, 0, 0);
-                                
-                                const slotEnd = new Date(slotDate);
-                                slotEnd.setHours(endH, endM, 0, 0);
+                                const todayStr = format(now, 'yyyy-MM-dd');
+                                const currentTimeStr = format(now, 'HH:mm');
 
-                                const isToday = isSameDay(new Date(), new Date(booking.slotDate));
-                                const isOngoing = isToday && now >= slotStart && now < slotEnd;
+                                const isOngoing = booking.slotDate === todayStr && 
+                                                  currentTimeStr >= booking.slotTime && 
+                                                  currentTimeStr < booking.slotEndTime;
                                 const isFinished = isPastSlotEnd(booking.slotDate, booking.slotEndTime);
                                 
                                 let status: 'ongoing' | 'finished' | 'upcoming' = 'upcoming';
