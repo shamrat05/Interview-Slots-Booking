@@ -28,18 +28,24 @@ import {
   MessageCircle,
   Video,
   Link,
-  Settings,
-  LayoutDashboard,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Maximize2,
-  Minimize2,
-  ArrowUpDown,
-  History,
   Archive,
   CalendarClock,
-  MoreVertical
+  MoreVertical,
+  Rocket,
+  Info as InfoIcon,
+  LayoutDashboard,
+  Settings,
+  Search,
+  Minimize2,
+  Maximize2,
+  ArrowUpDown,
+  History,
+  Briefcase,
+  ChevronUp,
+  ChevronDown,
+  Type,
+  List as ListIcon,
+  Quote
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ScheduleManager from '@/components/ScheduleManager';
@@ -62,8 +68,257 @@ const DynamicClockIcon = ({ time, className }: { time: string, className?: strin
     7: Clock7, 8: Clock8, 9: Clock9, 10: Clock10, 11: Clock11, 12: Clock12
   };
   const Icon = icons[hour] || Clock;
-  return <Icon className={className} />;
+  return <Icon className={className} />; 
 };
+
+interface JobPost {
+  id: string;
+  title: string;
+  description: string;
+  salary: string;
+  applyLink: string;
+  contactEmails: string[];
+  isPublished: boolean;
+  createdAt: string;
+}
+
+function CareersManager({ adminSecret }: { adminSecret: string }) {
+  const [jobs, setJobs] = useState<JobPost[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentJob, setCurrentJob] = useState<Partial<JobPost>>({});
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/jobs?secret=${encodeURIComponent(adminSecret)}`);
+      const data = await res.json();
+      if (data.success) setJobs(data.jobs);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentJob.title || !currentJob.description) return;
+    
+    const jobData = {
+      ...currentJob,
+      id: currentJob.id || Date.now().toString(),
+      createdAt: currentJob.createdAt || new Date().toISOString(),
+      contactEmails: Array.isArray(currentJob.contactEmails) ? currentJob.contactEmails : (currentJob.contactEmails as any || '').split(',').map((e: string) => e.trim()).filter(Boolean)
+    };
+
+    try {
+      await fetch(`/api/admin/jobs?secret=${encodeURIComponent(adminSecret)}`, {
+        method: 'POST',
+        body: JSON.stringify(jobData)
+      });
+      setIsEditing(false);
+      setCurrentJob({});
+      fetchJobs();
+    } catch (e) {
+      alert('Failed to save job');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure?')) return;
+    try {
+      await fetch(`/api/admin/jobs?secret=${encodeURIComponent(adminSecret)}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+      });
+      fetchJobs();
+    } catch (e) {
+      alert('Failed to delete');
+    }
+  };
+
+  const insertSnippet = (prefix: string, suffix = '') => {
+    const textarea = document.getElementById('job-editor') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = currentJob.description || '';
+    const selected = text.substring(start, end);
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+
+    const newText = `${before}${prefix}${selected}${suffix}${after}`;
+    setCurrentJob({ ...currentJob, description: newText });
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+    }, 10);
+  };
+
+  const togglePublish = async (job: JobPost) => {
+    const updated = { ...job, isPublished: !job.isPublished };
+    try {
+      await fetch(`/api/admin/jobs?secret=${encodeURIComponent(adminSecret)}`, {
+        method: 'POST',
+        body: JSON.stringify(updated)
+      });
+      fetchJobs();
+    } catch (e) {
+      alert('Failed to update status');
+    }
+  };
+
+  const prefillMarketingJob = () => {
+    setCurrentJob({
+      title: 'Marketing Associate – Dhaka',
+      description: `Join our team at LevelAxis and take your career to the next level!
+
+> Join our mission to bridge the gap between strategy and execution, helping us turn raw data into campaigns that actually work.
+
+🔹 **What You’ll Do:**
+• **Field & Research:** Conduct market research and field visits.
+• **Creative Execution:** Plan promotional events and materials.
+• **Digital & Admin:** Manage social media and daily admin tasks.
+
+🔹 **What We’re Looking For:**
+• **Education:** Bachelor’s degree in marketing or related field.
+• **Experience:** 0-3 years of marketing experience.
+• **Skills:** Analytics and strong writing.
+
+🔹 **Apply soon!** 🔹`,
+      salary: 'Negotiable (Up to 25k BDT)',
+      applyLink: 'https://lnkd.in/gdHawhJt',
+      contactEmails: ['hr@levelaxishq.com', 'shamrat@levelaxishq.com'],
+      isPublished: true
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 font-heading">
+            <Rocket className="w-6 h-6 text-primary-600" />
+            Job Board Manager
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Create and manage job opportunities for candidates.</p>
+        </div>
+        {!isEditing && (
+          <button 
+            onClick={() => { setIsEditing(true); setCurrentJob({}); }}
+            className="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-lg shadow-primary-100 transition-all active:scale-95"
+          >
+            Post New Job
+          </button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="max-w-5xl mx-auto animate-scale-in">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg text-gray-900">
+                  {currentJob.id ? 'Edit Position' : 'Create Position'}
+                </h3>
+                {!currentJob.id && (
+                  <button 
+                    onClick={prefillMarketingJob}
+                    className="text-xs text-primary-600 font-bold hover:underline"
+                  >
+                    Load Template
+                  </button>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Position Title</label>
+                  <input
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                    placeholder="e.g. Marketing Associate"
+                    value={currentJob.title || ''}
+                    onChange={e => setCurrentJob({...currentJob, title: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-1 mb-2 bg-gray-100 p-1 rounded-xl border border-gray-200 w-fit">
+                    <button onClick={() => insertSnippet('**', '**')} className="p-2 hover:bg-white rounded-lg text-gray-600" title="Bold (Blue)"><Type className="w-4 h-4 font-bold" /></button>
+                    <button onClick={() => insertSnippet('*', '*')} className="p-2 hover:bg-white rounded-lg text-gray-600" title="Italic"><Type className="w-4 h-4 italic" /></button>
+                    <button onClick={() => insertSnippet('\n• ', '')} className="p-2 hover:bg-white rounded-lg text-gray-600" title="Bullet"><ListIcon className="w-4 h-4" /></button>
+                    <button onClick={() => insertSnippet('\n> ', '')} className="p-2 hover:bg-white rounded-lg text-gray-600" title="Callout"><Quote className="w-4 h-4" /></button>
+                  </div>
+                  <textarea
+                    id="job-editor"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl h-96 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-sans text-sm"
+                    placeholder="Describe the role..."
+                    value={currentJob.description || ''}
+                    onChange={e => setCurrentJob({...currentJob, description: e.target.value})}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Salary Range"
+                    value={currentJob.salary || ''}
+                    onChange={e => setCurrentJob({...currentJob, salary: e.target.value})}
+                  />
+                  <input
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Application URL"
+                    value={currentJob.applyLink || ''}
+                    onChange={e => setCurrentJob({...currentJob, applyLink: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setIsEditing(false)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold">Cancel</button>
+                <button onClick={handleSave} className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-xl font-bold">Save Job</button>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-xs">
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                <h4 className="font-bold text-amber-900 mb-4 uppercase tracking-widest">Formatting</h4>
+                <ul className="space-y-3 text-amber-800">
+                  <li><strong>**text**</strong> : Bold + Company Blue</li>
+                  <li><strong>*text*</strong> : Italic</li>
+                  <li><strong>&gt; text</strong> : Shaded Callout Box</li>
+                  <li><strong>• text</strong> : Bullet points</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {jobs.map(job => (
+            <div key={job.id} className={`border rounded-[1.5rem] p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 ${job.isPublished ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 opacity-75'}`}>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 text-lg">{job.title}</h3>
+                <p className="text-sm text-gray-500 line-clamp-1">{job.description.replace(/[#*•>]/g, '')}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => togglePublish(job)} className="p-3 text-gray-500 hover:text-primary-600 transition-all">{job.isPublished ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+                <button onClick={() => { setCurrentJob(job); setIsEditing(true); }} className="p-3 text-blue-600"><Edit className="w-5 h-5" /></button>
+                <button onClick={() => handleDelete(job.id)} className="p-3 text-red-500"><Trash2 className="w-5 h-5" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AdminBooking {
   id: string;
@@ -197,11 +452,11 @@ interface RescheduleDialogProps {
   onCancel: () => void;
 }
 
-function EditBookingModal({ 
-  isOpen, 
-  booking, 
-  onConfirm, 
-  onCancel 
+function EditBookingModal({
+  isOpen,
+  booking,
+  onConfirm,
+  onCancel
 }: { 
   isOpen: boolean; 
   booking: AdminBooking | null; 
@@ -380,7 +635,7 @@ function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel
                           key={slot.id}
                           disabled={isDisabled}
                           onClick={() => setSelectedSlot(slot.id)}
-                          className={`px-3 py-2 text-sm rounded-lg border-2 transition-all flex flex-col items-center justify-center min-h-[60px] ${
+                          className={`px-3 py-2 text-sm rounded-lg border-2 transition-all flex flex-col items-center justify-center min-h-[60px] ${ 
                             selectedSlot === slot.id
                               ? 'bg-primary-50 border-primary-500 text-primary-700 font-semibold shadow-sm'
                               : isSelf
@@ -449,7 +704,7 @@ function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'schedule' | 'settings'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'schedule' | 'careers' | 'settings'>('bookings');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -1142,7 +1397,7 @@ export default function AdminPage() {
         <div className="flex border-b border-gray-200 mb-6 md:mb-8 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => setActiveTab('bookings')}
-            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
               activeTab === 'bookings'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1153,7 +1408,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
               activeTab === 'schedule'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1163,8 +1418,19 @@ export default function AdminPage() {
             Availability
           </button>
           <button
+            onClick={() => setActiveTab('careers')}
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
+              activeTab === 'careers'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Rocket className="w-4 h-4" />
+            Careers
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
-            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
               activeTab === 'settings'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1271,7 +1537,7 @@ export default function AdminPage() {
                 <div className="h-6 w-px bg-gray-200"></div>
                 <button
                   onClick={() => setShowPastBookings(!showPastBookings)}
-                  className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold whitespace-nowrap ${
+                  className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold whitespace-nowrap ${ 
                     showPastBookings 
                       ? 'bg-gray-100 text-gray-900' 
                       : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -1377,7 +1643,7 @@ export default function AdminPage() {
                         <div className="bg-white border-t border-gray-100 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-slide-up">
                           {visibleBookings.length === 0 ? (
                             <div className="col-span-full py-8 text-center text-gray-400 italic text-sm">
-                               {bookings.length > 0 ? "All bookings for this day are finished." : "No active bookings."}
+                               {bookings.length > 0 ? "All bookings for this day are finished." : "No active bookings."} 
                                {!showPastBookings && bookings.length > 0 && (
                                  <button onClick={() => setShowPastBookings(true)} className="ml-2 text-primary-600 hover:underline">Show them</button>
                                )}
@@ -1440,7 +1706,7 @@ export default function AdminPage() {
                                     {/* Header: Time & Status */}
                                     <div className="flex items-start justify-between">
                                       <div>
-                                        <div className={`flex items-center gap-1.5 font-bold text-lg ${
+                                        <div className={`flex items-center gap-1.5 font-bold text-lg ${ 
                                           status === 'ongoing' ? 'text-emerald-900' : status === 'finished' ? 'text-gray-500' : 'text-gray-900'
                                         }`}>
                                           <DynamicClockIcon 
@@ -1473,12 +1739,12 @@ export default function AdminPage() {
                                             <Phone className="w-3 h-3 opacity-50" />
                                             {booking.whatsapp}
                                           </div>
-                                          <div className={`text-[10px] font-bold flex items-center gap-1 px-1.5 py-0.5 rounded border ${
+                                          <div className={`text-[10px] font-bold flex items-center gap-1 px-1.5 py-0.5 rounded border ${ 
                                             status === 'finished' 
                                               ? 'border-gray-200 text-gray-400' 
                                               : 'border-primary-100 text-primary-700 bg-primary-50/50'
                                           }`}>
-                                            <Users className="w-2.5 h-2.5 opacity-70" />
+                                            <UserPlusIcon className="w-2.5 h-2.5 opacity-70" />
                                             <span className="truncate max-w-[80px]" title={booking.joiningPreference}>
                                               {booking.joiningPreference.length > 20 ? booking.joiningPreference.substring(0, 17) + '...' : booking.joiningPreference}
                                             </span>
@@ -1495,7 +1761,7 @@ export default function AdminPage() {
                                                 href={booking.meetLink} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className={`flex items-center gap-1.5 text-xs font-bold truncate max-w-[150px] ${
+                                                className={`flex items-center gap-1.5 text-xs font-bold truncate max-w-[150px] ${ 
                                                   status === 'finished' ? 'text-gray-400 hover:text-gray-600' : 'text-primary-600 hover:underline'
                                                 }`}
                                               >
@@ -1532,9 +1798,9 @@ export default function AdminPage() {
                                               {/* WhatsApp Status Toggle */}
                                               <button
                                                 onClick={() => toggleWhatsAppSent(booking)}
-                                                className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
+                                                className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${ 
                                                   status === 'finished' ? 'opacity-50 grayscale' : ''
-                                                } ${
+                                                } ${ 
                                                   booking.whatsappSent 
                                                     ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                                                     : 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -1547,7 +1813,7 @@ export default function AdminPage() {
                                               {/* Send WA */}
                                               <button
                                                 onClick={() => sendWhatsAppConfirmation(booking)}
-                                                className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${
+                                                className={`w-6 h-6 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 ${ 
                                                   status === 'finished' ? 'opacity-50 grayscale' : ''
                                                 }`}
                                                 title="Send WhatsApp Message"
@@ -1649,6 +1915,8 @@ export default function AdminPage() {
           </>
         ) : activeTab === 'schedule' ? (
           <ScheduleManager adminSecret={password} />
+        ) : activeTab === 'careers' ? (
+          <CareersManager adminSecret={password} />
         ) : (
           <ConfigManager adminSecret={password} />
         )}
@@ -1670,6 +1938,17 @@ export default function AdminPage() {
       />
 
       {/* Reschedule Dialog */}
+      <ConfirmDialog
+        isOpen={showRescheduleDialog}
+        title="Reschedule Booking"
+        message={`Pick a new slot for ${bookingToReschedule?.name}...`}
+        confirmText="Confirm Slot"
+        onConfirm={() => {}}
+        onCancel={() => {
+          setShowRescheduleDialog(false);
+          setBookingToReschedule(null);
+        }}
+      />
       <RescheduleDialog
         isOpen={showRescheduleDialog}
         booking={bookingToReschedule}
@@ -1702,7 +1981,7 @@ export default function AdminPage() {
               {latestBookings.map((booking, idx) => (
                 <div 
                   key={booking.id}
-                  className={`bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-primary-100 p-3 animate-slide-up relative group transition-all ${
+                  className={`bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-primary-100 p-3 animate-slide-up relative group transition-all ${ 
                     !showAllNotifications && idx > 0 ? 'hidden' : ''
                   }`}
                 >
@@ -1804,5 +2083,11 @@ export default function AdminPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+function UserPlusIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
   );
 }

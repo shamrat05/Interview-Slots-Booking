@@ -7,9 +7,15 @@ import {
   Clock, 
   Clock1, Clock2, Clock3, Clock4, Clock5, Clock6, 
   Clock7, Clock8, Clock9, Clock10, Clock11, Clock12,
-  ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2, Lock 
+  ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2, Lock,
+  Rocket,
+  CheckCircle2,
+  Briefcase,
+  Users
 } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
+import JobBoard from '@/components/JobBoard';
+import WelcomeNotice from '@/components/WelcomeNotice';
 import { TimeSlot } from '@/lib/types';
 import { isPastSlotEnd } from '@/lib/utils';
 
@@ -141,65 +147,70 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center shadow-md">
-              <Calendar className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-white font-sans text-slate-900">
+      <WelcomeNotice />
+      
+      {/* Premium Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-[100] transition-all">
+        <div className="max-w-5xl mx-auto px-6 h-20 md:h-24 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary-600 rounded-[1.25rem] flex items-center justify-center shadow-xl shadow-primary-200 rotate-3 group hover:rotate-0 transition-transform">
+              <Calendar className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">LevelAxis</h1>
-              <p className="text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-widest">Interview Scheduler</p>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight font-heading leading-tight uppercase">LevelAxis</h1>
+              <p className="text-[10px] md:text-xs font-black text-primary-500 uppercase tracking-[0.2em]">Interview Scheduler</p>
             </div>
           </div>
+          
           <a
             href="/admin"
-            className="text-xs font-semibold text-gray-500 hover:text-primary-600 transition-colors px-3 py-1.5 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200"
+            className="text-[10px] md:text-xs font-black text-slate-400 hover:text-primary-600 transition-all px-4 py-2 hover:bg-primary-50 rounded-xl uppercase tracking-widest border border-transparent hover:border-primary-100"
           >
-            Admin Login
+            Admin Access
           </a>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-blue-900">Interview Details</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                Each interview slot is <strong>{config?.slotDurationMinutes || 60} minutes</strong> with a <strong>{config?.breakDurationMinutes || 15}-minute break</strong> between slots.
-                Please choose a convenient time from the available options below.
+      <main className="max-w-5xl mx-auto px-6 py-8 md:py-16">
+        {/* Modern Info Banner - Compact on Mobile */}
+        <div className="relative group overflow-hidden bg-primary-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 mb-10 shadow-2xl shadow-primary-900/20">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600 rounded-full blur-3xl opacity-20 -mr-32 -mt-32 transition-all group-hover:scale-110" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-400 rounded-full blur-2xl opacity-10 -ml-24 -mb-24" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <div className="w-12 h-12 md:w-20 md:h-20 bg-white/10 backdrop-blur-xl rounded-2xl md:rounded-3xl flex items-center justify-center shrink-0 border border-white/10">
+              <Clock className="w-6 h-6 md:w-10 md:h-10 text-white animate-pulse-soft" />
+            </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-xl md:text-3xl font-black text-white font-heading tracking-tight mb-1 md:mb-3">Schedule Your Interview</h2>
+              <p className="text-primary-100 text-[11px] md:text-base leading-relaxed max-w-2xl opacity-90">
+                Each slot is <strong>{config?.slotDurationMinutes || 60} min</strong> with a <strong>{config?.breakDurationMinutes || 15}-min</strong> break. 
+                Please select a time and ensure your presence.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Date Tabs */}
+        {/* Date Tabs - Fixed Clipping */}
         {dates.length > 0 && (
-          <div className="mb-6">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {dates.map((dateInfo, index) => (
+          <div className="mb-10 pt-6 px-1">
+            <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-6 no-scrollbar -mt-4 pt-4">
+              {dates.map((dateInfo) => (
                 <button
                   key={dateInfo.date}
                   onClick={() => setSelectedDate(dateInfo.date)}
-                  className={`flex-shrink-0 px-4 py-3 rounded-lg font-medium transition-all ${
+                  className={`flex-shrink-0 px-6 py-4 rounded-2xl font-black transition-all border-2 flex flex-col items-center min-w-[120px] ${
                     selectedDate === dateInfo.date
-                      ? 'bg-primary-600 text-white shadow-lg'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:border-primary-300 hover:text-primary-600'
+                      ? 'bg-primary-600 border-primary-600 text-white shadow-xl shadow-primary-200 -translate-y-1'
+                      : 'bg-white text-slate-500 border-gray-100 hover:border-primary-200 hover:text-primary-600'
                   }`}
                 >
-                  {dateInfo.displayName}
-                  {dateInfo.isToday && (
-                    <span className="block text-xs opacity-75 mt-0.5">Today</span>
-                  )}
-                  {dateInfo.isTomorrow && !dateInfo.isToday && (
-                    <span className="block text-xs opacity-75 mt-0.5">Tomorrow</span>
-                  )}
+                  <span className="text-[10px] uppercase tracking-[0.2em] mb-1 opacity-70">
+                    {dateInfo.isToday ? 'Today' : dateInfo.isTomorrow ? 'Tomorrow' : format(new Date(dateInfo.date), 'EEEE')}
+                  </span>
+                  <span className="text-base">{dateInfo.displayName}</span>
                 </button>
               ))}
             </div>
@@ -208,59 +219,56 @@ export default function Home() {
 
         {/* Slots Grid */}
         {currentSlots.length > 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              {format(new Date(selectedDate), 'EEEE, MMMM d')}
-            </h2>
+          <div className="bg-white rounded-[2.5rem] border-2 border-gray-50 p-8 md:p-12 shadow-sm hover:shadow-xl transition-shadow duration-500">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-slate-500" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 font-heading tracking-tight uppercase">
+                {format(new Date(selectedDate), 'EEEE, MMMM d')}
+              </h3>
+            </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {currentSlots.map((slot) => {
                 const isUnavailable = slot.isBooked || slot.isPast || slot.isBlocked;
                 
-                // Styles based on status
                 const cardStyles = isUnavailable
-                  ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white border-gray-200 text-gray-900 hover:border-primary-500 hover:ring-1 hover:ring-primary-500 hover:shadow-md cursor-pointer group';
+                  ? 'bg-gray-50/50 border-gray-100 text-gray-300 cursor-not-allowed opacity-60 grayscale'
+                  : 'bg-white border-gray-100 text-slate-900 hover:border-primary-500 hover:ring-4 hover:ring-primary-50 hover:shadow-2xl hover:-translate-y-1 cursor-pointer group active:scale-95';
                 
                 const iconColor = isUnavailable 
-                    ? 'text-gray-300' 
-                    : 'text-gray-400 group-hover:text-primary-500 transition-colors';
+                    ? 'text-gray-200' 
+                    : 'text-primary-500 group-hover:scale-110 transition-transform';
 
                 return (
                   <button
                     key={slot.id}
                     onClick={() => handleSlotClick(slot)}
                     disabled={isUnavailable}
-                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center min-h-[90px] relative overflow-hidden ${cardStyles}`}
+                    className={`p-5 rounded-[1.5rem] border-2 transition-all duration-300 flex flex-col items-center justify-center min-h-[110px] relative overflow-hidden ${cardStyles}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {slot.isBooked ? (
-                        <CheckCircle className="w-4 h-4 text-gray-300" />
-                      ) : slot.isBlocked ? (
-                        <Lock className="w-4 h-4 text-gray-300" />
+                    <div className="flex items-center gap-2 mb-2 relative z-10">
+                      {!isUnavailable ? (
+                        <DynamicClockIcon time={slot.startTime} className={`w-5 h-5 ${iconColor}`} />
                       ) : (
-                        <DynamicClockIcon 
-                          time={slot.startTime} 
-                          className={`w-4 h-4 ${iconColor}`} 
-                        />
+                        <AlertCircle className="w-5 h-5 text-gray-200" />
                       )}
-                      <span className={`font-bold text-lg ${isUnavailable ? 'text-gray-400' : 'text-gray-700 group-hover:text-primary-700'}`}>
+                      <span className="font-black text-lg tracking-tight">
                         {slot.startTime}
                       </span>
                     </div>
                     
-                    <div className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                    <div className={`text-[9px] uppercase tracking-[0.2em] font-black px-3 py-1 rounded-full relative z-10 ${
                       isUnavailable 
                         ? 'bg-gray-100 text-gray-400' 
-                        : 'bg-primary-50 text-primary-700 group-hover:bg-primary-100'
+                        : 'bg-primary-50 text-primary-700 group-hover:bg-primary-600 group-hover:text-white transition-colors'
                     }`}>
-                      {slot.isBooked ? 'Booked' : slot.isPast ? 'Ended' : slot.isBlocked ? 'Unavailable' : 'Available'}
+                      {slot.isBooked ? 'Booked' : slot.isPast ? 'Ended' : slot.isBlocked ? 'Locked' : 'Select'}
                     </div>
 
-                    {/* Active Indicator for available slots */}
                     {!isUnavailable && (
-                      <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
                   </button>
                 );
@@ -268,35 +276,55 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No slots available</h3>
-            <p className="text-gray-500">No slots available for the selected date.</p>
+          <div className="bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 p-20 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Calendar className="w-10 h-10 text-slate-200" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">No slots available</h3>
+            <p className="text-slate-400 max-w-xs mx-auto">Please select another date to see available interview timings.</p>
           </div>
         )}
 
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}
+        {/* Real-time Stats */}
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all flex items-center gap-6">
+            <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CheckCircle2 className="w-7 h-7 text-green-500" />
             </div>
-            <div className="text-sm text-gray-500">Available Slots</div>
+            <div>
+              <div className="text-3xl font-black text-slate-900 font-heading tracking-tight">
+                {slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}
+              </div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Openings</div>
+            </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-2xl font-bold text-gray-600">
-              {slots.filter(s => s.isBooked).length}
+          
+          <div className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all flex items-center gap-6">
+            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Users className="w-7 h-7 text-slate-400" />
             </div>
-            <div className="text-sm text-gray-500">Booked Slots</div>
+            <div>
+              <div className="text-3xl font-black text-slate-900 font-heading tracking-tight">
+                {slots.filter(s => s.isBooked).length}
+              </div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scheduled Interviews</div>
+            </div>
           </div>
         </div>
+
+        {/* Available Jobs Section */}
+        <JobBoard />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 mt-12 py-6">
-        <div className="max-w-4xl mx-auto px-4 text-center text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} LevelAxis. All rights reserved.</p>
-          <p className="mt-1">Need help? Contact us at shamrat@levelaxishq.com</p>
+      {/* Modern Footer */}
+      <footer className="bg-slate-900 py-16 mt-20">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 mb-8">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">LevelAxis Career Portal v2.0</span>
+          </div>
+          <p className="text-slate-400 text-sm mb-2 font-medium">© {new Date().getFullYear()} LevelAxis. Engineering tomorrow's impact.</p>
+          <p className="text-slate-500 text-xs">Need help? Contact our HR team at <a href="mailto:shamrat@levelaxishq.com" className="text-primary-400 hover:underline">shamrat@levelaxishq.com</a></p>
         </div>
       </footer>
 

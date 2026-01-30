@@ -293,41 +293,41 @@ class KVStorage {
     const blockedSlotIds = new Set<string>();
     
     keys.forEach(key => {
-      // key format: blocked:yyyy-mm-dd:slotId
-      // we need to extract slotId.
-      // actually slotId is the last part? No, slotId is `date:time`.
-      // key is `blocked:date:date:time`.
-      // Let's look at `getBlockedKey`: `blocked:${date}:${slotId}`
-      // slotId contains date: `yyyy-mm-dd:HH-MM`.
-      // so key is `blocked:yyyy-mm-dd:yyyy-mm-dd:HH-MM`.
-      
-      // We can just strip the prefix `blocked:${date}:`?
-      // No, `slotId` itself starts with date.
-      // Let's just use the logic: key.replace(`blocked:${date}:`, '') is RISKY if date is repeated.
-      
-      // Simpler: The slotId is the suffix.
-      // key parts: blocked, date, slotId (which contains date).
-      // This key structure is a bit redundant but fine.
-      // let's just allow `isSlotBlocked` checks in the loop for now? 
-      // No, that's too slow.
-      
-      // Let's rely on the fact that we can parse the key.
-      const parts = key.split(':');
-      // blocked:2026-01-27:2026-01-27:09-00
-      // parts[0] = blocked
-      // parts[1] = 2026-01-27
-      // parts[2]... rest is slotId?
-      // NO. `generateSlotId` returns `${date}:${startTime}`.
-      // So slotId is `2026-01-27:09-00`.
-      // getBlockedKey returns `blocked:2026-01-27:2026-01-27:09-00`.
-      // So slotId is the substring after `blocked:date:`.
-      
       const prefix = `blocked:${date}:`;
       if (key.startsWith(prefix)) {
          blockedSlotIds.add(key.substring(prefix.length));
       }
     });
     return blockedSlotIds;
+  }
+
+  // Job Posting functionality
+  async getJobs(): Promise<any[]> {
+    const redis = await getRedisClient();
+    const keys = await redis.keys('job:*');
+    if (keys.length === 0) return [];
+    
+    const values = await Promise.all(keys.map(key => redis.get(key)));
+    return values.map(v => {
+      try {
+        return JSON.parse(v || '{}');
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  }
+
+  async saveJob(job: any): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = `job:${job.id}`;
+    const result = await redis.set(key, JSON.stringify(job));
+    return result === 'OK';
+  }
+
+  async deleteJob(id: string): Promise<number> {
+    const redis = await getRedisClient();
+    const key = `job:${id}`;
+    return await redis.del(key);
   }
 
   getAdminPassword(): string {
