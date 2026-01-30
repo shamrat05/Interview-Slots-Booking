@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { 
   ExternalLink,
@@ -23,15 +24,36 @@ interface JobPost {
   contactEmails: string[];
 }
 
-export default function JobBoard() {
+function JobBoardContent() {
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeShareId, setActiveShareId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchJobs();
   }, []);
+
+  useEffect(() => {
+    const jobId = searchParams.get('job');
+    if (jobId && jobs.length > 0) {
+      const jobExists = jobs.find(j => j.id === jobId);
+      if (jobExists) {
+        setExpandedJobId(jobId);
+        // Direct scroll to the job section
+        setTimeout(() => {
+          const element = document.getElementById(`job-${jobId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Offset for sticky header
+            window.scrollBy(0, -100);
+          }
+        }, 300);
+      }
+    }
+  }, [searchParams, jobs]);
 
   const fetchJobs = async () => {
     try {
@@ -47,7 +69,7 @@ export default function JobBoard() {
     }
   };
 
-  const handleShare = async (job: JobPost) => {
+  const handleNativeShare = async (job: JobPost) => {
     const url = `${window.location.origin}?job=${job.id}`;
     const shareData = {
       title: `Career at LevelAxis | ${job.title}`,
@@ -55,19 +77,20 @@ export default function JobBoard() {
       url: url,
     };
 
-    // Prioritize Native Sharing (Android/iOS)
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share(shareData);
-        return; // Success
+        return true;
       } catch (err) {
-        // If user cancelled, don't fallback to copy
-        if ((err as Error).name === 'AbortError') return;
+        if ((err as Error).name === 'AbortError') return true;
         console.error('Share failed:', err);
       }
     }
+    return false;
+  };
 
-    // Fallback: Copy to clipboard (Desktop or non-supported browsers)
+  const copyToClipboard = async (jobId: string) => {
+    const url = `${window.location.origin}?job=${jobId}`;
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(url);
@@ -79,12 +102,42 @@ export default function JobBoard() {
         document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      setCopiedId(job.id);
+      setCopiedId(jobId);
       setTimeout(() => setCopiedId(null), 2000);
-    } catch (copyErr) {
-      console.error('Failed to copy:', copyErr);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
+
+  const shareOptions = [
+    { 
+      name: 'LinkedIn', 
+      icon: (props: any) => (
+        <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+        </svg>
+      ),
+      getUrl: (url: string, title: string) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+    },
+    { 
+      name: 'Facebook', 
+      icon: (props: any) => (
+        <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      ),
+      getUrl: (url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+    },
+    { 
+      name: 'WhatsApp', 
+      icon: (props: any) => (
+        <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.417-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.305 1.652zm6.599-3.835c1.516.903 3.003 1.357 4.506 1.358 5.487 0 9.951-4.469 9.955-9.958 0-2.659-1.036-5.158-2.917-7.04s-4.381-2.919-7.043-2.92c-5.488 0-9.954 4.469-9.957 9.958a9.903 9.903 0 001.448 5.079l-1.02 3.726 3.823-1.003zm11.233-7.303c-.308-.154-1.821-.898-2.103-.999-.283-.102-.49-.153-.695.154-.205.307-.795.999-.974 1.203-.179.205-.359.231-.667.077-.308-.154-1.299-.479-2.474-1.528-.915-.815-1.532-1.822-1.711-2.129-.179-.307-.019-.473.135-.626.139-.138.308-.359.461-.538.154-.18.205-.308.308-.513.102-.205.051-.385-.026-.538-.077-.154-.695-1.673-.951-2.29-.249-.603-.503-.521-.695-.531-.18-.008-.385-.01-.59-.01-.205 0-.538.077-.821.385-.282.308-1.077 1.051-1.077 2.564 0 1.513 1.103 2.974 1.256 3.179.154.205 2.17 3.313 5.257 4.645.733.317 1.306.507 1.751.649.738.234 1.411.201 1.942.122.593-.088 1.821-.744 2.077-1.461.256-.718.256-1.333.179-1.461-.077-.128-.282-.205-.59-.359z"/>
+        </svg>
+      ),
+      getUrl: (url: string, title: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(title + " " + url)}`
+    }
+  ];
 
   if (isLoading || jobs.length === 0) return null;
 
@@ -110,6 +163,7 @@ export default function JobBoard() {
       <div className="grid grid-cols-1 gap-6 px-2">
         {jobs.map((job) => {
           const isExpanded = expandedJobId === job.id;
+          const isSharing = activeShareId === job.id;
           
           return (
             <div 
@@ -189,26 +243,58 @@ export default function JobBoard() {
                           Apply Now <ExternalLink className="w-5 h-5" />
                         </a>
                         
-                        <button 
-                          onClick={() => handleShare(job)}
-                          className={`px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border-2 ${
-                            copiedId === job.id 
-                              ? 'bg-green-50 border-green-200 text-green-600' 
-                              : 'bg-white border-gray-100 text-gray-600 hover:border-primary-200 hover:text-primary-600 shadow-sm'
-                          }`}
-                        >
-                          {copiedId === job.id ? (
-                            <>
-                              <CheckCircle2 className="w-5 h-5 animate-in zoom-in" />
-                              Link Copied
-                            </>
-                          ) : (
-                            <>
-                              <Share2 className="w-5 h-5" />
-                              Share Role
-                            </>
+                        <div className="relative">
+                          <button 
+                            onClick={async () => {
+                              const shared = await handleNativeShare(job);
+                              if (!shared) {
+                                setActiveShareId(isSharing ? null : job.id);
+                              }
+                            }}
+                            className={`px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border-2 ${
+                              isSharing 
+                                ? 'bg-primary-50 border-primary-200 text-primary-600' 
+                                : 'bg-white border-gray-100 text-gray-600 hover:border-primary-200 hover:text-primary-600 shadow-sm'
+                            }`}
+                          >
+                            <Share2 className="w-5 h-5" />
+                            Share Role
+                          </button>
+
+                          {/* Share Dropdown */}
+                          {isSharing && (
+                            <div className="absolute bottom-full mb-4 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 min-w-[200px] z-[50] animate-in slide-in-from-bottom-2 duration-300">
+                              <div className="flex flex-col gap-1">
+                                {shareOptions.map((option) => (
+                                  <a
+                                    key={option.name}
+                                    href={option.getUrl(`${window.location.origin}?job=${job.id}`, `Check out this opening for ${job.title} at LevelAxis!`)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition-colors group"
+                                  >
+                                    <option.icon className="w-5 h-5 text-gray-400 group-hover:text-primary-600" />
+                                    <span className="text-sm font-bold text-gray-600 group-hover:text-primary-900">{option.name}</span>
+                                  </a>
+                                ))}
+                                <div className="h-px bg-gray-100 my-1" />
+                                <button
+                                  onClick={() => {
+                                    copyToClipboard(job.id);
+                                    setActiveShareId(null);
+                                  }}
+                                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition-colors group text-left"
+                                >
+                                  {copiedId === job.id ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400 group-hover:text-primary-600" />}
+                                  <span className="text-sm font-bold text-gray-600 group-hover:text-primary-900">
+                                    {copiedId === job.id ? 'Copied!' : 'Copy Link'}
+                                  </span>
+                                </button>
+                              </div>
+                              <div className="absolute top-full right-8 -translate-y-px border-8 border-transparent border-t-white" />
+                            </div>
                           )}
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -272,6 +358,14 @@ export default function JobBoard() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function JobBoard() {
+  return (
+    <Suspense fallback={null}>
+      <JobBoardContent />
+    </Suspense>
   );
 }
 

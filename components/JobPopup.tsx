@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { 
   X, 
@@ -23,13 +24,14 @@ interface JobPost {
   contactEmails: string[];
 }
 
-export default function JobPopup() {
+function JobPopupContent() {
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [isOpen, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeJobIndex, setActiveJobIndex] = useState(0);
   const autoCloseTimer = useRef<NodeJS.Timeout | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchJobs();
@@ -47,9 +49,10 @@ export default function JobPopup() {
         
         const lastSeen = localStorage.getItem('last_job_view');
         const now = Date.now();
+        const hasJobParam = searchParams.has('job');
         
-        // Show if not seen in 24 hours
-        if (!lastSeen || (now - parseInt(lastSeen)) > (24 * 60 * 60 * 1000)) {
+        // Show if not seen in 24 hours and NOT deep-linking to a specific job
+        if (!hasJobParam && (!lastSeen || (now - parseInt(lastSeen)) > (24 * 60 * 60 * 1000))) {
           setTimeout(() => {
             setIsVisible(true);
             setIsExpanded(true);
@@ -138,7 +141,7 @@ export default function JobPopup() {
                   href={job.applyLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-8 py-4 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary-200 hover:shadow-primary-300 hover:-translate-y-0.5 active:translate-y-0"
+                  className="px-8 py-4 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary-200 shadow-primary-300 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Join the Team <ArrowRight className="w-5 h-5" />
                 </a>
@@ -229,5 +232,13 @@ export default function JobPopup() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function JobPopup() {
+  return (
+    <Suspense fallback={null}>
+      <JobPopupContent />
+    </Suspense>
   );
 }
