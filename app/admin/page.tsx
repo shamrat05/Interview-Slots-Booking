@@ -78,6 +78,8 @@ interface AdminBooking {
   bookedAt: string;
   whatsappSent?: boolean;
   meetLink?: string;
+  _rawStartTime: string;
+  _rawEndTime: string;
 }
 
 interface AdminData {
@@ -1301,14 +1303,15 @@ export default function AdminPage() {
                   const isExpanded = expandedDates.has(date);
                   
                   // Logic for Header Color
+                  const now = new Date();
+                  const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+                  const todayStr = format(bdNow, 'yyyy-MM-dd');
+                  const currentTimeStr = format(bdNow, 'HH:mm');
+
                   const hasOngoing = bookings.some(b => {
-                     const now = new Date();
-                     const slotDate = new Date(b.slotDate);
-                     const [startH, startM] = b.slotTime.split(':').map(Number);
-                     const [endH, endM] = b.slotEndTime.split(':').map(Number);
-                     const slotStart = new Date(slotDate); slotStart.setHours(startH, startM, 0, 0);
-                     const slotEnd = new Date(slotDate); slotEnd.setHours(endH, endM, 0, 0);
-                     return isSameDay(now, new Date(b.slotDate)) && now >= slotStart && now < slotEnd;
+                     return b.slotDate === todayStr && 
+                            currentTimeStr >= b._rawStartTime && 
+                            currentTimeStr < b._rawEndTime;
                   });
                   const allFinished = bookings.every(b => isPastSlotEnd(b.slotDate, b.slotEndTime));
                   
@@ -1369,12 +1372,13 @@ export default function AdminPage() {
                             visibleBookings.map((booking) => {
                                 // Calculate Status
                                 const now = new Date();
-                                const todayStr = format(now, 'yyyy-MM-dd');
-                                const currentTimeStr = format(now, 'HH:mm');
+                                const bdNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+                                const todayStr = format(bdNow, 'yyyy-MM-dd');
+                                const currentTimeStr = format(bdNow, 'HH:mm');
 
                                 const isOngoing = booking.slotDate === todayStr && 
-                                                  currentTimeStr >= booking.slotTime && 
-                                                  currentTimeStr < booking.slotEndTime;
+                                                  currentTimeStr >= booking._rawStartTime && 
+                                                  currentTimeStr < booking._rawEndTime;
                                 const isFinished = isPastSlotEnd(booking.slotDate, booking.slotEndTime);
                                 
                                 let status: 'ongoing' | 'finished' | 'upcoming' = 'upcoming';

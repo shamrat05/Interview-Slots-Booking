@@ -73,8 +73,9 @@ export async function GET(request: NextRequest) {
           whatsapp: booking.whatsapp,
           joiningPreference: booking.joiningPreference || 'Not provided',
           slotDate: booking.date,
-          // Store raw time for sorting
+          // Store raw time for sorting and logic
           _rawStartTime: rawStartTime,
+          _rawEndTime: rawEndTime,
           slotTime: rawStartTime && rawEndTime 
             ? `${formatTimeToAMPM(rawStartTime)} - ${formatTimeToAMPM(rawEndTime)}`
             : rawStartTime 
