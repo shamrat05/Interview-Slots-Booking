@@ -216,12 +216,12 @@ export default function Home() {
               <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg mb-3">
                 <span className="text-slate-200 font-semibold">{config?.slotDurationMinutes || 60} mins</span> technical interview. Select your preferred date & time below.
               </p>
-              <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-2 mb-4 max-w-lg shadow-md">
+              <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-2.5 mb-4 max-w-lg shadow-md">
                 <div className="flex gap-2 items-start">
-                  <span className="text-lg mt-0.5">⚠️</span>
-                  <div>
-                    <p className="text-red-100 text-[11px] sm:text-xs font-bold">No-show Policy</p>
-                    <p className="text-red-100 text-[10px] sm:text-xs opacity-90">Failing to join will result in blacklist status.</p>
+                  <span className="text-lg mt-0 shrink-0">⚠️</span>
+                  <div className="min-w-0">
+                    <p className="text-red-100 text-[11px] sm:text-xs font-bold leading-tight">No-show Policy</p>
+                    <p className="text-red-100 text-[10px] sm:text-xs opacity-90 leading-snug">Failing to join will result in blacklist status.</p>
                   </div>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="w-full sm:w-auto shrink-0 flex flex-col items-center bg-gradient-to-br from-slate-700/60 to-slate-800/60 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-lg shadow-slate-950/50">
+            <div className="hidden sm:flex w-full sm:w-auto shrink-0 flex-col items-center bg-gradient-to-br from-slate-700/60 to-slate-800/60 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-lg shadow-slate-950/50">
               <div className="w-12 h-12 bg-gradient-to-tr from-primary-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20 mb-2">
                 <Rocket className="w-6 h-6 text-white" />
               </div>
