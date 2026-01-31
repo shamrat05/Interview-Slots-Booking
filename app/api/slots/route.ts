@@ -118,6 +118,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if this is a final round slot
+    const isFinalInterview = await storage.isSlotFinalRound(date, slotId);
+
     // Validate WhatsApp format again
     const whatsappResult = validateWhatsAppNumber(whatsapp);
     if (!whatsappResult.isValid) {
@@ -164,7 +167,8 @@ export async function POST(request: NextRequest) {
       startTime,
       endTime,
       currentCtc: currentCtc || '',
-      expectedCtc: expectedCtc || ''
+      expectedCtc: expectedCtc || '',
+      isFinalInterview
     };
 
     // Attempt to book the slot

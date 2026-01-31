@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
       _rawStartTime: string;
       _rawEndTime: string;
       finalRoundEligible: boolean;
+      isFinalInterview: boolean;
+      currentCtc?: string;
+      expectedCtc?: string;
     }> = [];
 
     allBookings.forEach((dateBookings, date) => {
@@ -88,7 +91,10 @@ export async function GET(request: NextRequest) {
           whatsappSent: !!booking.whatsappSent,
           meetLink: booking.meetLink || '',
           googleEventId: booking.googleEventId || '',
-          finalRoundEligible: !!booking.finalRoundEligible
+          finalRoundEligible: !!booking.finalRoundEligible,
+          isFinalInterview: !!booking.isFinalInterview,
+          currentCtc: booking.currentCtc || '',
+          expectedCtc: booking.expectedCtc || ''
         });
       });
     });

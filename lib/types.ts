@@ -27,6 +27,7 @@ export interface BookingDetails {
   finalRoundEligible?: boolean;
   currentCtc?: string;
   expectedCtc?: string;
+  isFinalInterview?: boolean;
 }
 
 export interface BookingFormData {
@@ -40,6 +41,7 @@ export interface BookingFormData {
   endTime: string;
   currentCtc?: string;
   expectedCtc?: string;
+  isFinalInterview?: boolean;
 }
 
 export interface AdminUser {
@@ -56,6 +58,7 @@ export interface AdminUser {
   finalRoundEligible?: boolean;
   currentCtc?: string;
   expectedCtc?: string;
+  isFinalInterview?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {

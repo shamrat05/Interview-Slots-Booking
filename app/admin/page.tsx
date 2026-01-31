@@ -32,6 +32,7 @@ import {
   CalendarClock,
   MoreVertical,
   Rocket,
+  Trophy,
   Info as InfoIcon,
   LayoutDashboard,
   Settings,
@@ -336,6 +337,9 @@ interface AdminBooking {
   _rawStartTime: string;
   _rawEndTime: string;
   finalRoundEligible?: boolean;
+  isFinalInterview?: boolean;
+  currentCtc?: string;
+  expectedCtc?: string;
 }
 
 interface AdminData {
@@ -705,7 +709,7 @@ function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'schedule' | 'careers' | 'settings'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'finals' | 'schedule' | 'careers' | 'settings'>('bookings');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -1209,7 +1213,10 @@ export default function AdminPage() {
       Email: booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
       'WhatsApp Sent': booking.whatsappSent ? 'Yes' : 'No',
+      'Interview Type': booking.isFinalInterview ? 'Final Round' : 'Initial Round',
       'Joining': booking.joiningPreference,
+      'Current CTC': booking.currentCtc || '',
+      'Expected CTC': booking.expectedCtc || '',
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Meet Link': booking.meetLink || '',
@@ -1241,7 +1248,10 @@ export default function AdminPage() {
       'Email': booking.email,
       'WhatsApp': `https://wa.me/${booking.whatsapp.replace(/\D/g, '')}`,
       'WhatsApp Sent': booking.whatsappSent ? 'Yes' : 'No',
+      'Interview Type': booking.isFinalInterview ? 'Final Round' : 'Initial Round',
       'Joining': booking.joiningPreference,
+      'Current CTC': booking.currentCtc || '',
+      'Expected CTC': booking.expectedCtc || '',
       'Date': booking.slotDate,
       'Time': booking.slotTime,
       'Meet Link': booking.meetLink || '',
@@ -1291,7 +1301,15 @@ export default function AdminPage() {
     // 2. Filter out Archived
     const isArchived = archivedIds.has(booking.id);
     
-    return matchesSearch && !isArchived;
+    // 3. Filter by Tab
+    let matchesTab = true;
+    if (activeTab === 'bookings') {
+      matchesTab = !booking.isFinalInterview;
+    } else if (activeTab === 'finals') {
+      matchesTab = !!booking.isFinalInterview;
+    }
+    
+    return matchesSearch && !isArchived && matchesTab;
   }) || [];
 
   // Group bookings
@@ -1465,6 +1483,17 @@ export default function AdminPage() {
           >
             <LayoutDashboard className="w-4 h-4" />
             Bookings
+          </button>
+          <button
+            onClick={() => setActiveTab('finals')}
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
+              activeTab === 'finals'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Finals
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
@@ -1817,6 +1846,18 @@ export default function AdminPage() {
                                             </span>
                                           </div>
                                         </div>
+                                        {booking.isFinalInterview && (booking.currentCtc || booking.expectedCtc) && (
+                                          <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                                            <div className="text-[9px] sm:text-[10px] flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 shadow-sm">
+                                              <span className="font-black text-slate-400 uppercase tracking-tighter">Current:</span>
+                                              <span className="font-bold text-slate-700">{booking.currentCtc || 'N/A'}</span>
+                                            </div>
+                                            <div className="text-[9px] sm:text-[10px] flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 shadow-sm">
+                                              <span className="font-black text-purple-400 uppercase tracking-tighter">Expected:</span>
+                                              <span className="font-bold text-purple-700">{booking.expectedCtc || 'N/A'}</span>
+                                            </div>
+                                          </div>
+                                        )}
                                     </div>
 
                                     {/* Links & Actions Section */}
