@@ -42,15 +42,13 @@ function JobBoardContent() {
       const jobExists = jobs.find(j => j.id === jobId);
       if (jobExists) {
         setExpandedJobId(jobId);
-        // Direct scroll to the job section
         setTimeout(() => {
           const element = document.getElementById(`job-${jobId}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // Offset for sticky header
-            window.scrollBy(0, -100);
+            window.scrollBy(0, -120);
           }
-        }, 300);
+        }, 500);
       }
     }
   }, [searchParams, jobs]);
@@ -142,25 +140,31 @@ function JobBoardContent() {
   if (isLoading || jobs.length === 0) return null;
 
   return (
-    <div className="mt-16 space-y-8 max-w-4xl mx-auto pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between px-4 gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-200 rotate-3">
-            <RocketIcon className="w-5 h-5 text-white" />
+    <div className="mt-32 space-y-12 max-w-5xl mx-auto pb-24 px-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between px-2 gap-6">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-50 rounded-full border border-primary-100">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse"></div>
+            <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest">We Are Hiring</span>
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-gray-900 font-heading tracking-tight">Open Positions</h2>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Join our mission</p>
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-slate-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-slate-900/10 rotate-3">
+              <RocketIcon className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-heading tracking-tight">Open Positions</h2>
+              <p className="text-slate-500 font-medium">Join our mission to engineer tomorrow's impact.</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="px-4 py-1.5 bg-white text-primary-700 text-[10px] font-black rounded-xl border-2 border-primary-50 uppercase tracking-widest shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="px-5 py-2.5 bg-white text-slate-900 text-xs font-bold rounded-2xl border-2 border-slate-100 uppercase tracking-widest shadow-sm">
             {jobs.length} Role{jobs.length > 1 ? 's' : ''} Available
-          </span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 px-2">
+      <div className="grid grid-cols-1 gap-8">
         {jobs.map((job) => {
           const isExpanded = expandedJobId === job.id;
           const isSharing = activeShareId === job.id;
@@ -169,76 +173,72 @@ function JobBoardContent() {
             <div 
               key={job.id} 
               id={`job-${job.id}`}
-              className={`group bg-white rounded-[2.5rem] border-2 transition-all duration-500 overflow-hidden ${
+              className={`group bg-white rounded-[3rem] border-2 transition-all duration-700 overflow-hidden ${
                 isExpanded 
-                  ? 'border-primary-500 shadow-[0_30px_70px_rgba(2,132,199,0.15)] ring-8 ring-primary-50/50' 
-                  : 'border-gray-100 hover:border-primary-200 hover:shadow-2xl shadow-sm'
+                  ? 'border-primary-500 shadow-[0_40px_100px_rgba(2,132,199,0.12)] ring-8 ring-primary-50/50 -translate-y-1' 
+                  : 'border-slate-100 hover:border-slate-200 hover:shadow-2xl shadow-sm'
               }`}
             >
-              {/* Header / Clickable Area */}
               <button
                 onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
-                className="w-full text-left p-6 md:p-8 flex items-center justify-between gap-4 outline-none"
+                className="w-full text-left p-8 md:p-10 flex items-center justify-between gap-6 outline-none"
               >
-                <div className="flex items-center gap-5 min-w-0">
-                  <div className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center shrink-0 transition-all duration-700 ${
-                    isExpanded ? 'bg-primary-600 text-white rotate-[15deg] scale-110 shadow-xl shadow-primary-200' : 'bg-gray-50 text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500'
+                <div className="flex items-center gap-8 min-w-0">
+                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 transition-all duration-700 ${
+                    isExpanded ? 'bg-primary-600 text-white rotate-[15deg] scale-110 shadow-xl shadow-primary-200' : 'bg-slate-50 text-slate-400 group-hover:bg-primary-50 group-hover:text-primary-500'
                   }`}>
-                    <Sparkles className="w-7 h-7" />
+                    <Sparkles className="w-8 h-8" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className={`font-black text-xl md:text-2xl transition-colors duration-300 tracking-tight font-heading ${isExpanded ? 'text-primary-900' : 'text-gray-900 group-hover:text-primary-600'}`}>
+                    <h3 className={`font-bold text-2xl md:text-3xl transition-colors duration-300 tracking-tight font-heading ${isExpanded ? 'text-slate-900' : 'text-slate-800 group-hover:text-primary-600'}`}>
                       {job.title}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg">
-                        <Users className="w-3 h-3 text-primary-500" /> Dhaka Office
+                    <div className="flex flex-wrap items-center gap-4 mt-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100/50">
+                        <Users className="w-3.5 h-3.5 text-primary-500" /> Dhaka Office
                       </span>
-                      <span className="text-[10px] font-black text-primary-600 uppercase tracking-widest px-2 py-1 bg-primary-50 rounded-lg">
+                      <span className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] px-3 py-1.5 bg-primary-50 rounded-xl border border-primary-100/50">
                         {job.salary}
                       </span>
                     </div>
                   </div>
                 </div>
                 
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shrink-0 ${
-                  isExpanded ? 'bg-primary-100 text-primary-600 rotate-180' : 'bg-gray-50 text-gray-300 group-hover:bg-primary-50 group-hover:text-primary-400'
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-700 shrink-0 ${
+                  isExpanded ? 'bg-primary-50 text-primary-600 rotate-180 shadow-inner' : 'bg-slate-50 text-slate-300 group-hover:bg-primary-50 group-hover:text-primary-400'
                 }`}>
-                  <ChevronDown className="w-6 h-6" />
+                  <ChevronDown className="w-7 h-7" />
                 </div>
               </button>
 
-              {/* Expandable Content */}
               <div 
                 className={`transition-all duration-700 ease-in-out ${
-                  isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
+                  isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <div className="px-6 md:px-10 pb-10 pt-2 space-y-10">
-                  {/* Markdown Content */}
-                  <div className="prose prose-slate max-w-none font-sans text-gray-600 leading-[1.8] job-markdown-content border-t border-gray-50 pt-8">
+                <div className="px-8 md:px-14 pb-12 pt-4 space-y-12">
+                  <div className="prose prose-slate max-w-none font-sans text-slate-600 text-lg leading-[1.8] job-markdown-content border-t border-slate-100 pt-12">
                     <ReactMarkdown>{job.description}</ReactMarkdown>
                   </div>
 
-                  {/* Action Bar - Highly Persuasive */}
                   <div className="relative">
-                    <div className="absolute inset-0 bg-primary-600 blur-3xl opacity-[0.03] rounded-full" />
-                    <div className="relative bg-gradient-to-br from-white to-gray-50 rounded-[2rem] p-8 border border-gray-100 shadow-inner flex flex-col md:flex-row md:items-center justify-between gap-8">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-primary-600 font-black text-xs uppercase tracking-widest">
-                          <Trophy className="w-4 h-4" />
-                          Career Growth Awaits
+                    <div className="absolute inset-0 bg-primary-600 blur-[100px] opacity-[0.05] rounded-full" />
+                    <div className="relative bg-white rounded-[2.5rem] p-8 md:p-12 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-10">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 text-primary-600 font-black text-[10px] uppercase tracking-[0.3em]">
+                          <Trophy className="w-5 h-5" />
+                          Engineering Excellence
                         </div>
-                        <p className="text-gray-500 font-medium">Ready to bridge the gap between strategy and execution?</p>
-                        <p className="text-xs text-gray-400 italic font-medium">"Apply yourself or refer someone capable who'd be a great fit!"</p>
+                        <h4 className="text-2xl font-bold text-slate-900 tracking-tight">Ready to level up?</h4>
+                        <p className="text-slate-500 font-medium max-w-md">Join our elite engineering team and build systems that scale for millions.</p>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <a 
                           href={job.applyLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-10 py-4 bg-primary-600 text-white rounded-2xl font-black hover:bg-primary-700 transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(2,132,199,0.3)] hover:-translate-y-1 active:translate-y-0"
+                          className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition-all duration-500 flex items-center justify-center gap-3 shadow-2xl shadow-slate-900/10 hover:shadow-primary-500/30 hover:-translate-y-1 active:translate-y-0"
                         >
                           Apply Now <ExternalLink className="w-5 h-5" />
                         </a>
@@ -247,23 +247,20 @@ function JobBoardContent() {
                           <button 
                             onClick={async () => {
                               const shared = await handleNativeShare(job);
-                              if (!shared) {
-                                setActiveShareId(isSharing ? null : job.id);
-                              }
+                              if (!shared) setActiveShareId(isSharing ? null : job.id);
                             }}
-                            className={`px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border-2 ${
+                            className={`px-8 py-5 rounded-2xl font-bold transition-all duration-500 flex items-center justify-center gap-2 border-2 ${
                               isSharing 
                                 ? 'bg-primary-50 border-primary-200 text-primary-600' 
-                                : 'bg-white border-gray-100 text-gray-600 hover:border-primary-200 hover:text-primary-600 shadow-sm'
+                                : 'bg-white border-slate-100 text-slate-600 hover:border-primary-200 hover:text-primary-600 hover:bg-slate-50'
                             }`}
                           >
                             <Share2 className="w-5 h-5" />
                             Share Role
                           </button>
 
-                          {/* Share Dropdown */}
                           {isSharing && (
-                            <div className="absolute bottom-full mb-4 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 min-w-[200px] z-[50] animate-in slide-in-from-bottom-2 duration-300">
+                            <div className="absolute bottom-full mb-6 right-0 bg-white rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border border-slate-100 p-4 min-w-[240px] z-[50] animate-in zoom-in-95 duration-300">
                               <div className="flex flex-col gap-1">
                                 {shareOptions.map((option) => (
                                   <a
@@ -271,27 +268,29 @@ function JobBoardContent() {
                                     href={option.getUrl(`${window.location.origin}?job=${job.id}`, `Check out this opening for ${job.title} at LevelAxis!`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition-colors group"
+                                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 rounded-2xl transition-all group"
                                   >
-                                    <option.icon className="w-5 h-5 text-gray-400 group-hover:text-primary-600" />
-                                    <span className="text-sm font-bold text-gray-600 group-hover:text-primary-900">{option.name}</span>
+                                    <option.icon className="w-6 h-6 text-slate-400 group-hover:text-primary-600 transition-colors" />
+                                    <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">{option.name}</span>
                                   </a>
                                 ))}
-                                <div className="h-px bg-gray-100 my-1" />
+                                <div className="h-px bg-slate-100 my-2" />
                                 <button
                                   onClick={() => {
                                     copyToClipboard(job.id);
                                     setActiveShareId(null);
                                   }}
-                                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition-colors group text-left"
+                                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 rounded-2xl transition-all group text-left w-full"
                                 >
-                                  {copiedId === job.id ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400 group-hover:text-primary-600" />}
-                                  <span className="text-sm font-bold text-gray-600 group-hover:text-primary-900">
-                                    {copiedId === job.id ? 'Copied!' : 'Copy Link'}
+                                  <div className="shrink-0">
+                                    {copiedId === job.id ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6 text-slate-400 group-hover:text-primary-600" />}
+                                  </div>
+                                  <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">
+                                    {copiedId === job.id ? 'Copied Successfully' : 'Copy Public Link'}
                                   </span>
                                 </button>
                               </div>
-                              <div className="absolute top-full right-8 -translate-y-px border-8 border-transparent border-t-white" />
+                              <div className="absolute top-full right-10 -translate-y-px border-[12px] border-transparent border-t-white" />
                             </div>
                           )}
                         </div>
@@ -308,53 +307,52 @@ function JobBoardContent() {
       <style jsx global>{`
         .job-markdown-content strong {
           color: #0284c7;
-          font-weight: 900;
+          font-weight: 800;
           background: rgba(14, 165, 233, 0.05);
-          padding: 0 4px;
-          border-radius: 4px;
+          padding: 0 6px;
+          border-radius: 6px;
         }
         .job-markdown-content blockquote {
           background: #f8fafc;
-          border-left: 4px solid #0ea5e9;
-          padding: 1.5rem 2rem;
-          border-radius: 0 1.5rem 1.5rem 0;
+          border-left: 5px solid #0ea5e9;
+          padding: 2.5rem 3rem;
+          border-radius: 0 2.5rem 2.5rem 0;
           font-style: normal;
           font-weight: 500;
-          color: #334155;
-          margin: 2rem 0;
-        }
-        .job-markdown-content blockquote p {
-          margin: 0 !important;
-        }
-        .job-markdown-content ul {
-          list-style-type: none;
-          padding-left: 0;
-          margin: 1.5rem 0;
-        }
-        .job-markdown-content li {
-          position: relative;
-          padding-left: 2rem;
-          margin-bottom: 0.75rem;
-          font-weight: 500;
-        }
-        .job-markdown-content li::before {
-          content: "";
-          position: absolute;
-          left: 0.5rem;
-          top: 0.6rem;
-          width: 6px;
-          height: 6px;
-          background: #0ea5e9;
-          border-radius: 50%;
-          box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+          color: #1e293b;
+          margin: 3rem 0;
+          box-shadow: inset 5px 0 20px rgba(0,0,0,0.02);
         }
         .job-markdown-content h1, .job-markdown-content h2, .job-markdown-content h3 {
           font-family: var(--font-outfit);
           color: #0f172a;
-          font-weight: 900;
-          letter-spacing: -0.02em;
-          margin-top: 2.5rem;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          margin-top: 4rem;
+          margin-bottom: 1.5rem;
+        }
+        .job-markdown-content p {
+          margin-bottom: 1.5rem;
+        }
+        .job-markdown-content ul {
+          margin: 2rem 0;
+          padding-left: 0.5rem;
+        }
+        .job-markdown-content li {
           margin-bottom: 1rem;
+          padding-left: 2.5rem;
+          position: relative;
+        }
+        .job-markdown-content li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0.75rem;
+          width: 8px;
+          height: 8px;
+          background: #0ea5e9;
+          border-radius: 50%;
+          box-shadow: 0 0 15px rgba(14, 165, 233, 0.6);
         }
       `}</style>
     </div>

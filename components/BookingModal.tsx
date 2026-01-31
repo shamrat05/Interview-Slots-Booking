@@ -13,7 +13,10 @@ import {
   ArrowLeft,
   Loader2,
   Phone,
-  Clock
+  Clock,
+  Sparkles,
+  ShieldCheck,
+  CalendarDays
 } from 'lucide-react';
 
 interface BookingModalProps {
@@ -39,24 +42,21 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
   const validateStep1 = (): boolean => {
     const newErrors: { [key: string]: string } = {};
 
-    // Name validation
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Please enter your full name';
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = 'Name is too short';
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email address is required';
     } else if (!emailRegex.test(formData.email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Invalid email format';
     }
 
-    // Joining Preference validation
     if (!formData.joiningPreference.trim()) {
-      newErrors.joiningPreference = 'This field is required';
+      newErrors.joiningPreference = 'Please specify your joining timeline';
     }
 
     setErrors(newErrors);
@@ -72,9 +72,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
     } else if (!val.startsWith('+8801')) {
       newErrors.whatsapp = 'Must start with +8801';
     } else if (val.length !== 14) {
-      newErrors.whatsapp = `Must be exactly 13 digits after + (Current digits: ${val.length - 1})`;
-    } else if (!/^\+8801\d{9}$/.test(val)) {
-      newErrors.whatsapp = 'Invalid format. Use +8801XXXXXXXXX';
+      newErrors.whatsapp = 'Must be exactly 13 digits after +';
     }
 
     setErrors(newErrors);
@@ -83,20 +81,15 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
 
   const handleNext = () => {
     if (step === 'details') {
-      if (validateStep1()) {
-        setStep('confirmation');
-      }
+      if (validateStep1()) setStep('confirmation');
     } else if (step === 'confirmation') {
       setStep('whatsapp');
     }
   };
 
   const handleBack = () => {
-    if (step === 'confirmation') {
-      setStep('details');
-    } else if (step === 'whatsapp') {
-      setStep('confirmation');
-    }
+    if (step === 'confirmation') setStep('details');
+    else if (step === 'whatsapp') setStep('confirmation');
   };
 
   const handleSubmit = async () => {
@@ -112,10 +105,7 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          whatsapp: formData.whatsapp.trim(),
-          joiningPreference: formData.joiningPreference.trim(),
+          ...formData,
           slotId: slot.id,
           date: slot.date,
           startTime: slot.startTime,
@@ -124,15 +114,13 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
       });
 
       const data = await response.json();
-
-      if (data.success) {
-        setStep('success');
-      } else {
-        setErrorMessage(data.error || 'Failed to book slot');
+      if (data.success) setStep('success');
+      else {
+        setErrorMessage(data.error || 'Booking failed');
         setStep('error');
       }
     } catch {
-      setErrorMessage('Failed to connect to server. Please try again.');
+      setErrorMessage('Server connection lost');
       setStep('error');
     } finally {
       setIsSubmitting(false);
@@ -141,7 +129,6 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -151,161 +138,140 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
     }
   };
 
-  const handleClose = () => {
-    onClose();
-  };
-
   const renderStep = () => {
     switch (step) {
       case 'details':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Enter Your Details</h3>
+          <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-1">
+              <h3 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">Personal Details</h3>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">Professional information required.</p>
+            </div>
             
-            {/* Slot Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-2 text-blue-800">
-                <span className="font-medium">{slot.date}</span>
-                <span className="text-blue-400">•</span>
-                <span>{slot.displayTime}</span>
+            <div className="bg-primary-50/50 border border-primary-100 rounded-xl sm:rounded-3xl p-2.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-9 h-9 sm:w-12 h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center border border-primary-100 shadow-sm shrink-0">
+                  <CalendarDays className="w-4 h-4 sm:w-6 h-6 text-primary-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[7px] sm:text-[10px] font-black text-primary-600 uppercase tracking-widest">Scheduled</p>
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{slot.date} @ {slot.startTime}</p>
+                </div>
+              </div>
+              <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-primary-600 text-white text-[7px] sm:text-[10px] font-bold rounded-lg uppercase tracking-tighter shadow-lg shadow-primary-100 shrink-0">
+                Live
               </div>
             </div>
 
-            {/* Name Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="John Doe"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest ml-0.5">Full Name</label>
+                <div className="relative group">
+                  <div className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-600 transition-colors">
+                    <User className="w-4 h-4 sm:w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Your name"
+                    className={`w-full pl-8 sm:pl-12 pr-3 py-2 sm:py-4 bg-slate-50 border-2 rounded-lg sm:rounded-[1.25rem] outline-none transition-all duration-300 font-medium text-slate-900 placeholder:text-slate-400 text-sm ${
+                      errors.name ? 'border-red-100 focus:border-red-400' : 'border-slate-50 focus:border-primary-500 focus:bg-white focus:shadow-lg focus:shadow-primary-100'
+                    }`}
+                  />
+                </div>
+                {errors.name && <p className="text-[8px] font-bold text-red-500 uppercase tracking-widest ml-2">{errors.name}</p>}
               </div>
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.name}
-                </p>
-              )}
-            </div>
 
-            {/* Email Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="candidate@levelaxishq.com"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest ml-0.5">Work Email</label>
+                <div className="relative group">
+                  <div className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-600 transition-colors">
+                    <Mail className="w-4 h-4 sm:w-5 h-5" />
+                  </div>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="email@domain.com"
+                    className={`w-full pl-8 sm:pl-12 pr-3 py-2 sm:py-4 bg-slate-50 border-2 rounded-lg sm:rounded-[1.25rem] outline-none transition-all duration-300 font-medium text-slate-900 placeholder:text-slate-400 text-sm ${
+                      errors.email ? 'border-red-100 focus:border-red-400' : 'border-slate-50 focus:border-primary-500 focus:bg-white focus:shadow-lg focus:shadow-primary-100'
+                    }`}
+                  />
+                </div>
+                {errors.email && <p className="text-[8px] font-bold text-red-500 uppercase tracking-widest ml-2">{errors.email}</p>}
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.email}
-                </p>
-              )}
-            </div>
 
-            {/* Joining Preference Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                When can you join if you get selected? <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.joiningPreference}
-                  onChange={(e) => handleInputChange('joiningPreference', e.target.value)}
-                  placeholder="e.g. Immediately, 15 days notice, etc."
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.joiningPreference ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
+              <div className="space-y-1.5">
+                <label className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest ml-0.5">Joining Timeline</label>
+                <div className="relative group">
+                  <div className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-600 transition-colors">
+                    <Clock className="w-4 h-4 sm:w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.joiningPreference}
+                    onChange={(e) => handleInputChange('joiningPreference', e.target.value)}
+                    placeholder="e.g. Immediate, 1 Month Notice"
+                    className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 rounded-[1.25rem] outline-none transition-all duration-300 font-medium text-slate-900 placeholder:text-slate-400 ${
+                      errors.joiningPreference ? 'border-red-100 focus:border-red-400' : 'border-slate-50 focus:border-primary-500 focus:bg-white focus:shadow-xl focus:shadow-primary-100'
+                    }`}
+                  />
+                </div>
+                {errors.joiningPreference && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest ml-4 mt-1">{errors.joiningPreference}</p>}
               </div>
-              {errors.joiningPreference && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.joiningPreference}
-                </p>
-              )}
             </div>
 
             <button
               onClick={handleNext}
-              className="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 sm:py-5 bg-slate-900 text-white rounded-lg sm:rounded-[1.25rem] font-bold hover:bg-primary-600 transition-all duration-500 flex items-center justify-center gap-2 sm:gap-3 group shadow-lg sm:shadow-2xl shadow-slate-900/10 hover:shadow-primary-500/20 active:scale-[0.98] text-sm sm:text-base"
             >
-              Continue
-              <ArrowRight className="w-4 h-4" />
+              Review Booking
+              <ArrowRight className="w-4 h-4 sm:w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         );
 
       case 'confirmation':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Your Booking</h3>
-
-            {/* Confirmation Message */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <p className="text-amber-800 text-sm">
-                Please review your details before proceeding. You will need to provide your WhatsApp number in the next step.
-              </p>
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center space-y-2">
+              <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-amber-100 shadow-sm">
+                <ShieldCheck className="w-10 h-10 text-amber-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Final Verification</h3>
+              <p className="text-sm text-slate-500 font-medium">Please ensure all details are correct.</p>
             </div>
 
-            {/* Review Details */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium text-gray-900">{slot.date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-medium text-gray-900">{slot.displayTime}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Name:</span>
-                <span className="font-medium text-gray-900">{formData.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Email:</span>
-                <span className="font-medium text-gray-900">{formData.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Joining:</span>
-                <span className="font-medium text-gray-900">{formData.joiningPreference}</span>
-              </div>
+            <div className="bg-slate-50 rounded-[2.5rem] p-8 space-y-4 border border-slate-100">
+              {[
+                { label: 'Candidate', value: formData.name },
+                { label: 'Work Email', value: formData.email },
+                { label: 'Date', value: slot.date },
+                { label: 'Session Time', value: slot.startTime },
+                { label: 'Notice Period', value: formData.joiningPreference },
+              ].map((item, i) => (
+                <div key={i} className="flex justify-between items-center py-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
+                  <span className="text-sm font-bold text-slate-800">{item.value}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
                 onClick={handleBack}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-4 border-2 border-slate-100 text-slate-500 rounded-[1.25rem] font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
               >
-                <ArrowLeft className="w-4 h-4" />
-                Back
+                <ArrowLeft className="w-5 h-5" />
+                Edit
               </button>
               <button
                 onClick={handleNext}
-                className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                className="flex-[2] py-4 bg-primary-600 text-white rounded-[1.25rem] font-bold hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary-200"
               >
-                Continue
-                <ArrowRight className="w-4 h-4" />
+                Confirm & Next
+                <ArrowRight className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -313,73 +279,62 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
 
       case 'whatsapp':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add WhatsApp Number</h3>
-
-            {/* WhatsApp Info */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <div className="flex items-start gap-2">
-                <MessageCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                <div>
-                  <p className="text-green-800 text-sm font-medium">Why do we need this?</p>
-                  <p className="text-green-700 text-sm mt-1">
-                    We will send interview reminders and updates to your WhatsApp.
-                  </p>
-                </div>
-              </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="space-y-1">
+              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Communication</h3>
+              <p className="text-sm text-slate-500 font-medium">Add WhatsApp for interview links and reminders.</p>
             </div>
 
-            {/* WhatsApp Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                WhatsApp Number <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="bg-green-50/50 border border-green-100 rounded-[2rem] p-6 flex items-start gap-4">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-green-100 shadow-sm shrink-0">
+                <MessageCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <p className="text-sm text-green-800 font-medium leading-relaxed">
+                We'll send the Google Meet invitation directly to your WhatsApp 1 hour before the session.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">WhatsApp Number</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-green-600 transition-colors">
+                  <Phone className="w-5 h-5" />
+                </div>
                 <input
                   type="tel"
                   value={formData.whatsapp}
                   onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                   placeholder="+8801XXXXXXXXX"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.whatsapp ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 rounded-[1.25rem] outline-none transition-all duration-300 font-medium text-slate-900 ${
+                    errors.whatsapp ? 'border-red-100 focus:border-red-400' : 'border-slate-50 focus:border-green-500 focus:bg-white focus:shadow-xl focus:shadow-green-50'
                   }`}
                 />
               </div>
-              {errors.whatsapp ? (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.whatsapp}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-gray-500">
-                  Include country code (e.g., +880 for BD)
-                </p>
-              )}
+              {errors.whatsapp && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest ml-4 mt-1">{errors.whatsapp}</p>}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
                 onClick={handleBack}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="flex-1 py-4 border-2 border-slate-100 text-slate-500 rounded-[1.25rem] font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
               >
-                <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-[2] py-4 bg-green-600 text-white rounded-[1.25rem] font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-100 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Booking...
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Securing Slot...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="w-4 h-4" />
-                    Confirm Booking
+                    <Sparkles className="w-5 h-5" />
+                    Book Interview
                   </>
                 )}
               </button>
@@ -389,124 +344,108 @@ export default function BookingModal({ slot, onClose, onComplete }: BookingModal
 
       case 'success':
         return (
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Booking Confirmed!</h3>
-            <p className="text-gray-600 mb-4">
-              Your interview has been scheduled successfully.
-            </p>
-
-            <div className="bg-red-50 border border-red-100 rounded-lg p-3 mb-6">
-              <p className="text-[11px] text-red-700 leading-relaxed">
-                <strong>Note:</strong> If you do not receive the interview link via WhatsApp at least 1 hour before your scheduled time, please contact the number or email from which you received this confirmation.
-              </p>
+          <div className="text-center space-y-8 animate-in zoom-in-95 duration-700">
+            <div className="relative">
+              <div className="absolute inset-0 bg-green-500 blur-[60px] opacity-20 animate-pulse"></div>
+              <div className="w-24 h-24 bg-green-500 rounded-[2.5rem] flex items-center justify-center mx-auto relative z-10 shadow-2xl shadow-green-200">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
             </div>
             
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-left mb-6">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Date:</span>
-                  <span className="font-medium">{slot.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Time:</span>
-                  <span className="font-medium">{slot.displayTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Name:</span>
-                  <span className="font-medium">{formData.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">WhatsApp:</span>
-                  <span className="font-medium">{formData.whatsapp}</span>
-                </div>
+            <div className="space-y-2">
+              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Booking Secured!</h3>
+              <p className="text-slate-500 font-medium">Your interview has been officially scheduled.</p>
+            </div>
+
+            <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 text-left space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-slate-200/50">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirmation ID</span>
+                <span className="text-xs font-mono font-bold text-primary-600">LA-{Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
               </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</span>
+                <span className="text-sm font-bold text-slate-800">{slot.date}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Time</span>
+                <span className="text-sm font-bold text-slate-800">{slot.startTime} (BD Time)</span>
+              </div>
+            </div>
+
+            <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 flex gap-3 items-center">
+              <AlertCircle className="w-5 h-5 text-primary-600 shrink-0" />
+              <p className="text-[10px] text-primary-800 font-bold uppercase tracking-wider text-left leading-relaxed">
+                Check WhatsApp 1 hour before for the meeting link.
+              </p>
             </div>
 
             <button
               onClick={onComplete}
-              className="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold hover:bg-primary-600 transition-all shadow-xl active:scale-[0.98]"
             >
-              Done
+              Back to Home
             </button>
           </div>
         );
 
       case 'error':
         return (
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+          <div className="text-center space-y-8 animate-in fade-in duration-500">
+            <div className="w-24 h-24 bg-red-50 rounded-[2.5rem] flex items-center justify-center mx-auto border border-red-100">
+              <AlertCircle className="w-12 h-12 text-red-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Booking Failed</h3>
-            <p className="text-gray-600 mb-2">{errorMessage}</p>
-            <p className="text-sm text-gray-500 mb-6">
-              This slot may have been booked by someone else. Please try another time.
-            </p>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={handleClose}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  window.location.reload();
-                }}
-                className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
-              >
-                Try Another Slot
-              </button>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-slate-900">Oops! Failed</h3>
+              <p className="text-slate-500 font-medium">{errorMessage}</p>
             </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-5 bg-primary-600 text-white rounded-[1.5rem] font-bold hover:bg-primary-700 transition-all"
+            >
+              Retry Booking
+            </button>
           </div>
         );
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6">
       <div 
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={handleClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500"
+        onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up">
-        {/* Close Button */}
+      <div className="relative bg-white rounded-t-[2rem] sm:rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.2)] w-full sm:max-w-lg max-h-[90vh] sm:max-h-auto overflow-y-auto border border-slate-100 animate-in slide-in-from-bottom-4 duration-300">
         {step !== 'success' && step !== 'error' && (
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="sticky top-0 right-0 z-10 flex justify-end pt-3 sm:pt-4 pr-3 sm:pr-4 bg-white/95 backdrop-blur-sm">
+            <button
+              onClick={onClose}
+              className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
-        {/* Header */}
         {step !== 'success' && step !== 'error' && (
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Book Interview Slot</h2>
-            <p className="text-sm text-gray-500 mt-1">Step {step === 'details' ? '1' : step === 'confirmation' ? '2' : '3'} of 3</p>
-            
-            {/* Progress Bar */}
-            <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary-600 transition-all duration-300"
-                style={{ 
-                  width: step === 'details' ? '33%' : step === 'confirmation' ? '66%' : '100%' 
-                }}
-              />
+          <div className="px-4 sm:px-8 pt-2 sm:pt-3 pb-2">
+            <div className="flex gap-2">
+              {[1, 2, 3].map((s) => (
+                <div 
+                  key={s}
+                  className={`h-1 rounded-full transition-all duration-500 flex-1 ${
+                    (step === 'details' && s === 1) || (step === 'confirmation' && s <= 2) || (step === 'whatsapp' && s <= 3)
+                      ? 'bg-primary-600' 
+                      : 'bg-slate-100'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         )}
 
-        {/* Content */}
-        <div className="p-6">
+        <div className="px-4 sm:px-8 py-3 sm:py-4 pb-20 sm:pb-8">
           {renderStep()}
         </div>
       </div>
