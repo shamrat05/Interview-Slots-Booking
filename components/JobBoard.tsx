@@ -140,31 +140,33 @@ function JobBoardContent() {
   if (isLoading || jobs.length === 0) return null;
 
   return (
-    <div className="mt-32 space-y-12 max-w-5xl mx-auto pb-24 px-4">
-      <div className="flex flex-col md:flex-row md:items-end justify-between px-2 gap-6">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-50 rounded-full border border-primary-100">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse"></div>
-            <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest">We Are Hiring</span>
-          </div>
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-slate-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-slate-900/10 rotate-3">
-              <RocketIcon className="w-7 h-7 text-white" />
+    <div className="w-full space-y-12 pb-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 lg:gap-10">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-50 rounded-full border border-primary-100">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse"></div>
+              <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest">We Are Hiring</span>
             </div>
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-heading tracking-tight">Open Positions</h2>
-              <p className="text-slate-500 font-medium">Join our mission to engineer tomorrow's impact.</p>
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-slate-900/10 rotate-3 shrink-0">
+                <RocketIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 font-heading tracking-tight">Open Positions</h2>
+                <p className="text-sm sm:text-base text-slate-500 font-medium">Join our mission to engineer tomorrow's impact.</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="px-5 py-2.5 bg-white text-slate-900 text-xs font-bold rounded-2xl border-2 border-slate-100 uppercase tracking-widest shadow-sm">
-            {jobs.length} Role{jobs.length > 1 ? 's' : ''} Available
+          <div className="flex items-center gap-3">
+            <div className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white text-slate-900 text-xs font-bold rounded-2xl border-2 border-slate-100 uppercase tracking-widest shadow-sm whitespace-nowrap">
+              {jobs.length} Role{jobs.length > 1 ? 's' : ''} Available
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         {jobs.map((job) => {
           const isExpanded = expandedJobId === job.id;
           const isSharing = activeShareId === job.id;
@@ -181,33 +183,33 @@ function JobBoardContent() {
             >
               <button
                 onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
-                className="w-full text-left p-8 md:p-10 flex items-center justify-between gap-6 outline-none"
+                className="w-full text-left p-4 sm:p-6 md:p-8 lg:p-10 flex items-center justify-between gap-4 sm:gap-6 outline-none"
               >
-                <div className="flex items-center gap-8 min-w-0">
-                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 transition-all duration-700 ${
+                <div className="flex items-center gap-4 sm:gap-6 md:gap-8 min-w-0">
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-3xl flex items-center justify-center shrink-0 transition-all duration-700 ${
                     isExpanded ? 'bg-primary-600 text-white rotate-[15deg] scale-110 shadow-xl shadow-primary-200' : 'bg-slate-50 text-slate-400 group-hover:bg-primary-50 group-hover:text-primary-500'
                   }`}>
-                    <Sparkles className="w-8 h-8" />
+                    <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className={`font-bold text-2xl md:text-3xl transition-colors duration-300 tracking-tight font-heading ${isExpanded ? 'text-slate-900' : 'text-slate-800 group-hover:text-primary-600'}`}>
+                    <h3 className={`font-bold text-lg sm:text-xl md:text-2xl lg:text-3xl transition-colors duration-300 tracking-tight font-heading ${isExpanded ? 'text-slate-900' : 'text-slate-800 group-hover:text-primary-600'}`}>
                       {job.title}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-4 mt-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100/50">
-                        <Users className="w-3.5 h-3.5 text-primary-500" /> Dhaka Office
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
+                      <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-100/50">
+                        <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-500" /> Dhaka Office
                       </span>
-                      <span className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] px-3 py-1.5 bg-primary-50 rounded-xl border border-primary-100/50">
+                      <span className="text-[9px] sm:text-[10px] font-black text-primary-600 uppercase tracking-[0.15em] px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-50 rounded-lg sm:rounded-xl border border-primary-100/50">
                         {job.salary}
                       </span>
                     </div>
                   </div>
                 </div>
                 
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-700 shrink-0 ${
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-700 shrink-0 ${
                   isExpanded ? 'bg-primary-50 text-primary-600 rotate-180 shadow-inner' : 'bg-slate-50 text-slate-300 group-hover:bg-primary-50 group-hover:text-primary-400'
                 }`}>
-                  <ChevronDown className="w-7 h-7" />
+                  <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
                 </div>
               </button>
 
@@ -216,31 +218,31 @@ function JobBoardContent() {
                   isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <div className="px-8 md:px-14 pb-12 pt-4 space-y-12">
-                  <div className="prose prose-slate max-w-none font-sans text-slate-600 text-lg leading-[1.8] job-markdown-content border-t border-slate-100 pt-12">
+                <div className="px-4 sm:px-6 md:px-8 lg:px-14 pb-8 sm:pb-10 md:pb-12 pt-4 space-y-8 sm:space-y-10 md:space-y-12">
+                  <div className="prose prose-sm sm:prose prose-slate max-w-none font-sans text-slate-600 text-base sm:text-lg leading-[1.7] sm:leading-[1.8] job-markdown-content border-t border-slate-100 pt-8 sm:pt-10 md:pt-12">
                     <ReactMarkdown>{job.description}</ReactMarkdown>
                   </div>
 
                   <div className="relative">
                     <div className="absolute inset-0 bg-primary-600 blur-[100px] opacity-[0.05] rounded-full" />
-                    <div className="relative bg-white rounded-[2.5rem] p-8 md:p-12 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-10">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-primary-600 font-black text-[10px] uppercase tracking-[0.3em]">
-                          <Trophy className="w-5 h-5" />
+                    <div className="relative bg-white rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] p-6 sm:p-8 md:p-10 lg:p-12 border border-slate-100 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8 md:gap-10">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="flex items-center gap-2 sm:gap-3 text-primary-600 font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em]">
+                          <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
                           Engineering Excellence
                         </div>
-                        <h4 className="text-2xl font-bold text-slate-900 tracking-tight">Ready to level up?</h4>
-                        <p className="text-slate-500 font-medium max-w-md">Join our elite engineering team and build systems that scale for millions.</p>
+                        <h4 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Ready to level up?</h4>
+                        <p className="text-sm sm:text-base text-slate-500 font-medium max-w-md">Join our elite engineering team and build systems that scale for millions.</p>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                         <a 
                           href={job.applyLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition-all duration-500 flex items-center justify-center gap-3 shadow-2xl shadow-slate-900/10 hover:shadow-primary-500/30 hover:-translate-y-1 active:translate-y-0"
+                          className="px-6 sm:px-8 md:px-10 lg:px-12 py-4 sm:py-5 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-primary-600 transition-all duration-500 flex items-center justify-center gap-2 shadow-2xl shadow-slate-900/10 hover:shadow-primary-500/30 hover:-translate-y-1 active:translate-y-0 text-sm sm:text-base whitespace-nowrap"
                         >
-                          Apply Now <ExternalLink className="w-5 h-5" />
+                          Apply Now <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
                         </a>
                         
                         <div className="relative">
@@ -249,18 +251,18 @@ function JobBoardContent() {
                               const shared = await handleNativeShare(job);
                               if (!shared) setActiveShareId(isSharing ? null : job.id);
                             }}
-                            className={`px-8 py-5 rounded-2xl font-bold transition-all duration-500 flex items-center justify-center gap-2 border-2 ${
+                            className={`w-full sm:w-auto px-6 sm:px-8 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-bold transition-all duration-500 flex items-center justify-center gap-2 border-2 text-sm sm:text-base ${
                               isSharing 
                                 ? 'bg-primary-50 border-primary-200 text-primary-600' 
                                 : 'bg-white border-slate-100 text-slate-600 hover:border-primary-200 hover:text-primary-600 hover:bg-slate-50'
                             }`}
                           >
-                            <Share2 className="w-5 h-5" />
-                            Share Role
+                            <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            Share
                           </button>
 
                           {isSharing && (
-                            <div className="absolute bottom-full mb-6 right-0 bg-white rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.2)] border border-slate-100 p-4 min-w-[240px] z-[50] animate-in zoom-in-95 duration-300">
+                            <div className="absolute bottom-full mb-4 sm:mb-6 right-0 sm:right-auto bg-white rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.2)] border border-slate-100 p-3 sm:p-4 min-w-[220px] sm:min-w-[240px] z-[50] animate-in zoom-in-95 duration-300">
                               <div className="flex flex-col gap-1">
                                 {shareOptions.map((option) => (
                                   <a
@@ -268,10 +270,10 @@ function JobBoardContent() {
                                     href={option.getUrl(`${window.location.origin}?job=${job.id}`, `Check out this opening for ${job.title} at LevelAxis!`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 rounded-2xl transition-all group"
+                                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4 hover:bg-slate-50 rounded-xl sm:rounded-2xl transition-all group"
                                   >
-                                    <option.icon className="w-6 h-6 text-slate-400 group-hover:text-primary-600 transition-colors" />
-                                    <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">{option.name}</span>
+                                    <option.icon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-primary-600 transition-colors shrink-0" />
+                                    <span className="text-xs sm:text-sm font-bold text-slate-600 group-hover:text-slate-900">{option.name}</span>
                                   </a>
                                 ))}
                                 <div className="h-px bg-slate-100 my-2" />
@@ -280,17 +282,17 @@ function JobBoardContent() {
                                     copyToClipboard(job.id);
                                     setActiveShareId(null);
                                   }}
-                                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 rounded-2xl transition-all group text-left w-full"
+                                  className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4 hover:bg-slate-50 rounded-xl sm:rounded-2xl transition-all group text-left w-full"
                                 >
                                   <div className="shrink-0">
-                                    {copiedId === job.id ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6 text-slate-400 group-hover:text-primary-600" />}
+                                    {copiedId === job.id ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-primary-600" />}
                                   </div>
-                                  <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">
-                                    {copiedId === job.id ? 'Copied Successfully' : 'Copy Public Link'}
+                                  <span className="text-xs sm:text-sm font-bold text-slate-600 group-hover:text-slate-900">
+                                    {copiedId === job.id ? 'Copied' : 'Copy Link'}
                                   </span>
                                 </button>
                               </div>
-                              <div className="absolute top-full right-10 -translate-y-px border-[12px] border-transparent border-t-white" />
+                              <div className="absolute top-full right-8 sm:right-10 -translate-y-px border-[12px] border-transparent border-t-white" />
                             </div>
                           )}
                         </div>

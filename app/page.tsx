@@ -284,7 +284,7 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="text-xs font-medium text-slate-900">Join Early</p>
-                    <p className="text-xs text-slate-500">5 minutes before your time</p>
+                    <p className="text-xs text-slate-500">1 minute before your time</p>
                   </div>
                 </li>
               </ul>
@@ -379,13 +379,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Job Openings Section */}
-        <section className="mb-12 bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Available Positions</h2>
-            <p className="text-slate-600">Explore the opportunities we're currently hiring for.</p>
-          </div>
-          <div id="job-board-section">
+        {/* Job Openings Section - Full Width */}
+        <section className="mb-12">
+          <div id="job-board-section" className="w-full">
             <JobBoard />
           </div>
         </section>
