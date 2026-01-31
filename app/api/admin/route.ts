@@ -29,7 +29,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Performance cleanup: Remove passed bookings to save space
-    await storage.cleanupPassedBookings();
+    try {
+      await storage.cleanupPassedBookings();
+    } catch (cleanupError) {
+      console.error('Error during passed bookings cleanup:', cleanupError);
+      // Continue even if cleanup fails
+    }
 
     // Fetch all bookings
     const allBookings = await storage.getAllBookings();
@@ -92,7 +97,7 @@ export async function GET(request: NextRequest) {
           meetLink: booking.meetLink || '',
           googleEventId: booking.googleEventId || '',
           finalRoundEligible: !!booking.finalRoundEligible,
-          isFinalInterview: !!booking.isFinalInterview,
+          isFinalInterview: !!booking.isFinalInterview || !!booking.finalRoundEligible || (!!booking.currentCtc && booking.currentCtc !== '') || (!!booking.expectedCtc && booking.expectedCtc !== ''),
           currentCtc: booking.currentCtc || '',
           expectedCtc: booking.expectedCtc || ''
         });

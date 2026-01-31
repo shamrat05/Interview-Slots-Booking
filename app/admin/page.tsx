@@ -709,7 +709,7 @@ function RescheduleDialog({ isOpen, booking, availableSlots, onConfirm, onCancel
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'finals' | 'schedule' | 'careers' | 'settings'>('bookings');
+  const [activeTab, setActiveTab] = useState<'all' | 'initial' | 'finals' | 'schedule' | 'careers' | 'settings'>('all');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -1287,30 +1287,29 @@ export default function AdminPage() {
   };
 
   // Filter and group bookings
-  const filteredBookings = adminData?.bookings.filter(booking => {
-    // 1. Filter by Search
+  const tabBookings = adminData?.bookings.filter(booking => {
+    const isArchived = archivedIds.has(booking.id);
+    if (isArchived) return false;
+    
+    if (activeTab === 'initial') {
+      return !booking.isFinalInterview;
+    } else if (activeTab === 'finals') {
+      return !!booking.isFinalInterview;
+    }
+    // 'all' includes both
+    return true;
+  }) || [];
+
+  const filteredBookings = tabBookings.filter(booking => {
     const search = searchTerm.toLowerCase();
-    const matchesSearch = (
+    return (
       booking.name.toLowerCase().includes(search) ||
       booking.email.toLowerCase().includes(search) ||
       booking.whatsapp.toLowerCase().includes(search) ||
       booking.joiningPreference.toLowerCase().includes(search) ||
       booking.slotDate.includes(search)
     );
-    
-    // 2. Filter out Archived
-    const isArchived = archivedIds.has(booking.id);
-    
-    // 3. Filter by Tab
-    let matchesTab = true;
-    if (activeTab === 'bookings') {
-      matchesTab = !booking.isFinalInterview;
-    } else if (activeTab === 'finals') {
-      matchesTab = !!booking.isFinalInterview;
-    }
-    
-    return matchesSearch && !isArchived && matchesTab;
-  }) || [];
+  });
 
   // Group bookings
   let groupedBookings = filteredBookings.reduce((groups, booking) => {
@@ -1474,15 +1473,26 @@ export default function AdminPage() {
         {/* Navigation Tabs - Scrollable on mobile */}
         <div className="flex border-b border-gray-200 mb-6 md:mb-8 overflow-x-auto no-scrollbar scroll-smooth">
           <button
-            onClick={() => setActiveTab('bookings')}
+            onClick={() => setActiveTab('all')}
             className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
-              activeTab === 'bookings'
+              activeTab === 'all'
                 ? 'border-primary-600 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            Bookings
+            All
+          </button>
+          <button
+            onClick={() => setActiveTab('initial')}
+            className={`flex-shrink-0 px-4 md:px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${ 
+              activeTab === 'initial'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Initial
           </button>
           <button
             onClick={() => setActiveTab('finals')}
@@ -1530,7 +1540,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {activeTab === 'bookings' ? (
+        {activeTab === 'all' || activeTab === 'initial' || activeTab === 'finals' ? (
           <>
             {/* Stats Cards - Optimized for Mobile */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
@@ -1540,7 +1550,7 @@ export default function AdminPage() {
                     <Calendar className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{adminData?.stats.total || 0}</p>
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{tabBookings.length}</p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Total</p>
                   </div>
                 </div>
@@ -1551,7 +1561,7 @@ export default function AdminPage() {
                     <Calendar className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{adminData?.stats.uniqueDates || 0}</p>
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">{new Set(tabBookings.map(b => b.slotDate)).size}</p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Days</p>
                   </div>
                 </div>
@@ -1563,7 +1573,7 @@ export default function AdminPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                      {adminData?.bookings.filter(b => !isPastSlotEnd(b.slotDate, b.slotEndTime) && !archivedIds.has(b.id)).length || 0}
+                      {tabBookings.filter(b => !isPastSlotEnd(b.slotDate, b.slotEndTime)).length}
                     </p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Upcoming</p>
                   </div>
@@ -1576,7 +1586,7 @@ export default function AdminPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                      {adminData?.bookings.filter(b => isPastSlotEnd(b.slotDate, b.slotEndTime) && !archivedIds.has(b.id)).length || 0}
+                      {tabBookings.filter(b => isPastSlotEnd(b.slotDate, b.slotEndTime)).length}
                     </p>
                     <p className="text-[10px] md:text-sm text-gray-500 truncate">Completed</p>
                   </div>
@@ -1813,7 +1823,7 @@ export default function AdminPage() {
                                           {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
                                           {status}
                                         </div>
-                                        {booking.finalRoundEligible && (
+                                        {booking.isFinalInterview && (
                                           <div className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 flex items-center gap-1 border border-purple-200 shadow-sm animate-in zoom-in">
                                             <span>🏆</span> Finalist
                                           </div>
@@ -2137,7 +2147,7 @@ export default function AdminPage() {
                       <button 
                         onClick={() => {
                           setSearchTerm(booking.name);
-                          setActiveTab('bookings');
+                          setActiveTab(booking.isFinalInterview ? 'finals' : 'initial');
                         }}
                         className="text-[9px] font-bold text-primary-600 hover:underline mt-1"
                       >
