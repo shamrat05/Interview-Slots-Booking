@@ -157,6 +157,69 @@ class KVStorage {
     return exists === 1;
   }
 
+  // Final Round Slot functionality
+  private getFinalRoundKey(date: string, slotId: string): string {
+    return `final_round:${date}:${slotId}`;
+  }
+
+  async setSlotFinalRound(date: string, slotId: string): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = this.getFinalRoundKey(date, slotId);
+    const result = await redis.set(key, '1');
+    return result === 'OK';
+  }
+
+  async unsetSlotFinalRound(date: string, slotId: string): Promise<number> {
+    const redis = await getRedisClient();
+    const key = this.getFinalRoundKey(date, slotId);
+    return await redis.del(key);
+  }
+
+  async isSlotFinalRound(date: string, slotId: string): Promise<boolean> {
+    const redis = await getRedisClient();
+    const key = this.getFinalRoundKey(date, slotId);
+    const exists = await redis.exists(key);
+    return exists === 1;
+  }
+  
+  async getFinalRoundSlots(date: string): Promise<Set<string>> {
+    const redis = await getRedisClient();
+    const pattern = `final_round:${date}:*`;
+    const keys = await redis.keys(pattern);
+    const finalRoundSlotIds = new Set<string>();
+    
+    keys.forEach(key => {
+      const prefix = `final_round:${date}:`;
+      if (key.startsWith(prefix)) {
+         finalRoundSlotIds.add(key.substring(prefix.length));
+      }
+    });
+    return finalRoundSlotIds;
+  }
+
+  // Find booking by user info (for verification)
+  async findBookingByEmailOrPhone(identifier: string): Promise<unknown | null> {
+    const redis = await getRedisClient();
+    const keys = await redis.keys('booking:*');
+    if (keys.length === 0) return null;
+
+    const values = await Promise.all(keys.map(key => redis.get(key)));
+    const search = identifier.toLowerCase().replace(/\D/g, ''); // normalize for phone search
+    const searchEmail = identifier.toLowerCase();
+
+    for (const value of values) {
+      if (!value) continue;
+      try {
+        const booking = JSON.parse(value);
+        if (booking.email?.toLowerCase() === searchEmail) return booking;
+        if (booking.whatsapp?.replace(/\D/g, '') === search) return booking;
+      } catch (e) {
+        continue;
+      }
+    }
+    return null;
+  }
+
   // Day Blocking functionality
   private getBlockedDayKey(date: string): string {
     return `blocked_day:${date}`;
@@ -395,6 +458,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
   // Prefetch all bookings and blocked slots for the date range
   const datePromises: Promise<Map<string, unknown>>[] = [];
   const blockedPromises: Promise<Set<string>>[] = [];
+  const finalRoundPromises: Promise<Set<string>>[] = [];
   const blockedDayPromises: Promise<boolean>[] = [];
   const dateStrings: string[] = [];
 
@@ -404,20 +468,24 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     dateStrings.push(dateStr);
     datePromises.push(storage.getBookings(dateStr));
     blockedPromises.push(storage.getBlockedSlots(dateStr));
+    finalRoundPromises.push(storage.getFinalRoundSlots(dateStr));
     blockedDayPromises.push(storage.isDayBlocked(dateStr));
   }
 
   const bookingsPerDay = await Promise.all(datePromises);
   const blockedPerDay = await Promise.all(blockedPromises);
+  const finalRoundPerDay = await Promise.all(finalRoundPromises);
   const dayBlockedStatuses = await Promise.all(blockedDayPromises);
   
   const bookingsMap = new Map<string, Map<string, unknown>>(); // Date -> (SlotId -> Booking)
   const blockedMap = new Map<string, Set<string>>(); // Date -> Set<SlotId>
+  const finalRoundMap = new Map<string, Set<string>>(); // Date -> Set<SlotId>
   const dayBlockedMap = new Map<string, boolean>(); // Date -> isBlocked
 
   dateStrings.forEach((dateStr, index) => {
     bookingsMap.set(dateStr, bookingsPerDay[index]);
     blockedMap.set(dateStr, blockedPerDay[index]);
+    finalRoundMap.set(dateStr, finalRoundPerDay[index]);
     dayBlockedMap.set(dateStr, dayBlockedStatuses[index]);
   });
 
@@ -428,6 +496,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     const isFullDayBlocked = dayBlockedMap.get(dateStr) || false;
     const dayBookings = bookingsMap.get(dateStr) || new Map();
     const dayBlocked = blockedMap.get(dateStr) || new Set();
+    const dayFinalRound = finalRoundMap.get(dateStr) || new Set();
 
     const startMinutes = fullConfig.startHour * 60;
     const endMinutes = fullConfig.endHour * 60;
@@ -464,6 +533,9 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       
       // Check if blocked
       const isBlocked = isFullDayBlocked || dayBlocked.has(slotId);
+      
+      // Check if Final Round
+      const isFinalRound = dayFinalRound.has(slotId);
 
       slots.push({
         id: slotId,
@@ -474,6 +546,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
         isBooked,
         isBlocked,
         isPast,
+        isFinalRound,
         booking: booking ? {
           ...booking,
           joiningPreference: booking.joiningPreference || 'Not provided',

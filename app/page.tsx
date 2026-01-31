@@ -430,6 +430,7 @@ export default function Home() {
                 <li><a href="#" className="hover:text-primary-600 transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-primary-600 transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-primary-600 transition-colors">Terms of Service</a></li>
+                <li><a href="/final-interview" className="hover:text-purple-600 transition-colors font-medium text-purple-600/80">Final Round Portal</a></li>
               </ul>
             </div>
             <div>

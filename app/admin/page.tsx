@@ -335,6 +335,7 @@ interface AdminBooking {
   meetLink?: string;
   _rawStartTime: string;
   _rawEndTime: string;
+  finalRoundEligible?: boolean;
 }
 
 interface AdminData {
@@ -723,6 +724,8 @@ export default function AdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const [showFinalDialog, setShowFinalDialog] = useState(false);
+  const [bookingToFinalize, setBookingToFinalize] = useState<AdminBooking | null>(null);
   
   // New States for View Options
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -1110,6 +1113,53 @@ export default function AdminPage() {
     }
   };
 
+  const executeFinalEligibilityToggle = async (booking: AdminBooking) => {
+    try {
+      const response = await fetch(
+        `/api/admin?secret=${encodeURIComponent(password)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'toggle-final-eligibility',
+            date: booking.slotDate,
+            slotId: booking.slotId
+          })
+        }
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setAdminData(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            bookings: prev.bookings.map(b => 
+              b.id === booking.id ? { ...b, finalRoundEligible: data.finalRoundEligible } : b
+            )
+          };
+        });
+        setShowFinalDialog(false);
+        setBookingToFinalize(null);
+      } else {
+        alert(data.error || 'Failed to update eligibility');
+      }
+    } catch {
+      alert('Failed to connect to server');
+    }
+  };
+
+  const toggleFinalEligibility = (booking: AdminBooking) => {
+    if (booking.finalRoundEligible) {
+      if (confirm(`Remove final round eligibility for ${booking.name}?`)) {
+        executeFinalEligibilityToggle(booking);
+      }
+    } else {
+      setBookingToFinalize(booking);
+      setShowFinalDialog(true);
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
@@ -1119,19 +1169,29 @@ export default function AdminPage() {
   };
 
   const sendWhatsAppConfirmation = (booking: AdminBooking) => {
-    const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
-    const template = config?.whatsappTemplate || defaultTemplate;
+    let message = '';
     
-    // Get day name
-    const dateObj = new Date(booking.slotDate);
-    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    if (booking.finalRoundEligible) {
+      const finalLink = `${window.location.origin}/final-interview`;
+      message = `Congratulations {name}! 🎉\n\nYou have qualified for the Final Round interview with LevelAxis.\n\nPlease verify your profile and book your final slot here:\n{link}\n\nThis is a critical step, please complete it ASAP.`;
+      message = message
+        .replace('{name}', booking.name)
+        .replace('{link}', finalLink);
+    } else {
+      const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
+      const template = config?.whatsappTemplate || defaultTemplate;
+      
+      // Get day name
+      const dateObj = new Date(booking.slotDate);
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const message = template
-      .replace('{name}', booking.name)
-      .replace('{day}', dayName)
-      .replace('{date}', booking.slotDate)
-      .replace('{time}', booking.slotTime)
-      .replace('{link}', booking.meetLink || 'Will be shared soon');
+      message = template
+        .replace('{name}', booking.name)
+        .replace('{day}', dayName)
+        .replace('{date}', booking.slotDate)
+        .replace('{time}', booking.slotTime)
+        .replace('{link}', booking.meetLink || 'Will be shared soon');
+    }
 
     const encodedMessage = encodeURIComponent(message);
     const phoneNumber = booking.whatsapp.replace(/\D/g, '');
@@ -1719,9 +1779,16 @@ export default function AdminPage() {
                                           to {booking.slotEndTime}
                                         </div>
                                       </div>
-                                      <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
-                                        {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
-                                        {status}
+                                      <div className="flex flex-col items-end gap-1.5">
+                                        <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
+                                          {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
+                                          {status}
+                                        </div>
+                                        {booking.finalRoundEligible && (
+                                          <div className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 flex items-center gap-1 border border-purple-200 shadow-sm animate-in zoom-in">
+                                            <span>🏆</span> Finalist
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
 
@@ -1823,6 +1890,17 @@ export default function AdminPage() {
                                             </div>
 
                                             <div className="flex items-center gap-1">
+                                                 <button
+                                                  onClick={() => toggleFinalEligibility(booking)}
+                                                  className={`p-1.5 rounded-md transition-all ${ 
+                                                    booking.finalRoundEligible 
+                                                      ? 'text-purple-600 bg-purple-50 hover:bg-purple-100 ring-1 ring-purple-200 shadow-sm' 
+                                                      : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                                                  }`}
+                                                  title={booking.finalRoundEligible ? "Qualified for Final Round" : "Mark Qualified for Final Round"}
+                                                 >
+                                                   <span className="text-xs">🏆</span>
+                                                 </button>
                                               {!isFinished ? (
                                                  <div className="relative">
                                                    <button
@@ -1957,6 +2035,21 @@ export default function AdminPage() {
         onCancel={() => {
           setShowRescheduleDialog(false);
           setBookingToReschedule(null);
+        }}
+      />
+
+      {/* Final Round Invite Dialog */}
+      <ConfirmDialog
+        isOpen={showFinalDialog}
+        title="Invite to Final Round"
+        message={`You are about to qualify ${bookingToFinalize?.name} for the final interview round. They will be able to access the exclusive booking portal.`}
+        confirmText="Confirm Eligibility"
+        requireTyping={true}
+        expectedText={bookingToFinalize?.name.split(' ')[0] || ''}
+        onConfirm={() => bookingToFinalize && executeFinalEligibilityToggle(bookingToFinalize)}
+        onCancel={() => {
+          setShowFinalDialog(false);
+          setBookingToFinalize(null);
         }}
       />
 

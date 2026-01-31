@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     storage.initialize();
 
     const body = await request.json();
-    const { name, email, whatsapp, joiningPreference, slotId, date, startTime, endTime, secret } = body;
+    const { name, email, whatsapp, joiningPreference, slotId, date, startTime, endTime, secret, currentCtc, expectedCtc } = body;
 
     // Validate required fields
     if (!name || !email || !whatsapp || !joiningPreference || !slotId || !date || !startTime || !endTime) {
@@ -162,7 +162,9 @@ export async function POST(request: NextRequest) {
       slotId,
       date,
       startTime,
-      endTime
+      endTime,
+      currentCtc: currentCtc || '',
+      expectedCtc: expectedCtc || ''
     };
 
     // Attempt to book the slot

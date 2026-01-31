@@ -9,6 +9,7 @@ export interface TimeSlot {
   isBooked: boolean;
   isBlocked?: boolean;
   isPast?: boolean;
+  isFinalRound?: boolean;
   booking?: BookingDetails;
 }
 
@@ -23,6 +24,9 @@ export interface BookingDetails {
   whatsappSent?: boolean;
   meetLink?: string;
   googleEventId?: string;
+  finalRoundEligible?: boolean;
+  currentCtc?: string;
+  expectedCtc?: string;
 }
 
 export interface BookingFormData {
@@ -34,6 +38,8 @@ export interface BookingFormData {
   date: string;
   startTime: string;
   endTime: string;
+  currentCtc?: string;
+  expectedCtc?: string;
 }
 
 export interface AdminUser {
@@ -47,6 +53,9 @@ export interface AdminUser {
   whatsappSent?: boolean;
   meetLink?: string;
   googleEventId?: string;
+  finalRoundEligible?: boolean;
+  currentCtc?: string;
+  expectedCtc?: string;
 }
 
 export interface ApiResponse<T = unknown> {

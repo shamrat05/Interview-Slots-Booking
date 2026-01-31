@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Outfit } from 'next/font/google'
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -19,6 +21,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${outfit.variable} font-sans min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50`}>
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

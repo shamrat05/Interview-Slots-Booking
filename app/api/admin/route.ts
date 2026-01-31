@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       googleEventId: string;
       _rawStartTime: string;
       _rawEndTime: string;
+      finalRoundEligible: boolean;
     }> = [];
 
     allBookings.forEach((dateBookings, date) => {
@@ -86,7 +87,8 @@ export async function GET(request: NextRequest) {
           bookedAt: booking.bookedAt,
           whatsappSent: !!booking.whatsappSent,
           meetLink: booking.meetLink || '',
-          googleEventId: booking.googleEventId || ''
+          googleEventId: booking.googleEventId || '',
+          finalRoundEligible: !!booking.finalRoundEligible
         });
       });
     });
@@ -480,6 +482,30 @@ export async function POST(request: NextRequest) {
       };
       
       await storage.updateBooking(date, slotId, updatedBooking);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'toggle-final-eligibility') {
+      const booking = await storage.getBooking(date, slotId);
+      if (!booking) return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
+      
+      const bookingData = booking as any;
+      const updatedBooking = {
+        ...bookingData,
+        finalRoundEligible: !bookingData.finalRoundEligible
+      };
+      
+      await storage.updateBooking(date, slotId, updatedBooking);
+      return NextResponse.json({ success: true, finalRoundEligible: updatedBooking.finalRoundEligible });
+    }
+
+    if (action === 'toggle-final-slot') {
+      const { isFinal } = body;
+      if (isFinal) {
+        await storage.setSlotFinalRound(date, slotId);
+      } else {
+        await storage.unsetSlotFinalRound(date, slotId);
+      }
       return NextResponse.json({ success: true });
     }
 

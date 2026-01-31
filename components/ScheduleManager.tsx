@@ -48,6 +48,7 @@ interface Slot {
   isBooked: boolean;
   isBlocked?: boolean;
   isPast?: boolean;
+  isFinalRound?: boolean;
   booking?: any;
 }
 
@@ -158,6 +159,37 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
         // Update local state
         setSlots(slots.map(s => 
           s.id === slot.id ? { ...s, isBlocked: !slot.isBlocked } : s
+        ));
+      } else {
+        alert(data.error || 'Failed to update slot');
+      }
+    } catch (err) {
+      alert('Connection error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const toggleFinalRound = async (slot: Slot) => {
+    if (slot.isBooked) return;
+    setProcessingId(slot.id);
+    
+    try {
+      const response = await fetch(`/api/admin?secret=${encodeURIComponent(adminSecret)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggle-final-slot',
+          date: slot.date,
+          slotId: slot.id,
+          isFinal: !slot.isFinalRound
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setSlots(slots.map(s => 
+          s.id === slot.id ? { ...s, isFinalRound: !slot.isFinalRound } : s
         ));
       } else {
         alert(data.error || 'Failed to update slot');
@@ -315,21 +347,16 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
 
               // Check if ongoing (only for today)
               const isToday = isSameDay(new Date(), new Date(slot.date));
-              // We use bdNow logic from parent but for simple client comparison new Date() is local browser time
-              // Assuming admin is viewing in same timezone or relative time works. 
-              // Better to use the passed `bdNow` logic if consistent, but `isPast` is already computed by backend.
-              // Let's rely on isPast for "Finished" and refine "Ongoing".
-              
-              // We'll use the current browser time for "Ongoing" visual check as it's a UI enhancement
               const currentTime = new Date(); 
               const isOngoing = isToday && currentTime >= slotStart && currentTime < slotEnd;
 
-              let status: 'ongoing' | 'finished' | 'upcoming' | 'blocked' | 'available' = 'available';
+              let status: 'ongoing' | 'finished' | 'upcoming' | 'blocked' | 'available' | 'final' = 'available';
               
               if (slot.isBlocked) status = 'blocked';
               else if (isOngoing && slot.isBooked) status = 'ongoing';
               else if (slot.isPast) status = 'finished';
               else if (slot.isBooked) status = 'upcoming';
+              else if (slot.isFinalRound) status = 'final';
               else status = 'available';
 
               // Styles map
@@ -338,7 +365,8 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                 finished: 'bg-gray-50 border-gray-200 opacity-75',
                 upcoming: 'bg-blue-50 border-blue-200',
                 blocked: 'bg-rose-50 border-rose-200 border-dashed',
-                available: 'bg-white border-gray-200 hover:border-primary-400 hover:shadow-md'
+                available: 'bg-white border-gray-200 hover:border-primary-400 hover:shadow-md',
+                final: 'bg-purple-50 border-purple-500 ring-1 ring-purple-500 hover:shadow-md'
               };
 
               const badgeStyles = {
@@ -346,13 +374,14 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                 finished: 'bg-gray-200 text-gray-600',
                 upcoming: 'bg-blue-100 text-blue-700',
                 blocked: 'bg-rose-100 text-rose-700',
-                available: 'bg-green-100 text-green-700'
+                available: 'bg-green-100 text-green-700',
+                final: 'bg-purple-100 text-purple-700'
               };
               
               return (
                 <div 
                   key={slot.id}
-                  className={`p-4 rounded-xl border transition-all flex flex-col justify-between h-[140px] ${styles[status]}`}
+                  className={`p-4 rounded-xl border transition-all flex flex-col justify-between h-[150px] ${styles[status]}`}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-2">
@@ -372,7 +401,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                     </div>
                     <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${badgeStyles[status]}`}>
                       {status === 'ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>}
-                      {status}
+                      {status === 'final' ? 'FINAL' : status}
                     </div>
                   </div>
 
@@ -386,7 +415,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           onClick={() => toggleBlock(slot)}
                           disabled={processingId === slot.id}
@@ -395,32 +424,40 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
                               ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
+                          title={status === 'blocked' ? "Unblock Slot" : "Block Slot"}
                         >
                           {processingId === slot.id ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : status === 'blocked' ? (
-                            <>
-                              <Unlock className="w-3 h-3" />
-                              Unblock
-                            </>
+                            <Unlock className="w-3 h-3" />
                           ) : (
-                            <>
-                              <Lock className="w-3 h-3" />
-                              Block
-                            </>
+                            <Lock className="w-3 h-3" />
                           )}
                         </button>
                         
-                        {(status === 'available' || status === 'blocked') && (
+                        <button
+                          onClick={() => toggleFinalRound(slot)}
+                          disabled={processingId === slot.id}
+                           className={`py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${
+                            status === 'final'
+                              ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          title={status === 'final' ? "Mark as Regular Round" : "Mark as Final Round"}
+                        >
+                           <span className="text-[10px]">🏆</span>
+                        </button>
+
+                        {(status === 'available' || status === 'blocked' || status === 'final') && (
                           <button
                             onClick={() => {
                               setSelectedSlotForManual(slot);
                               setShowManualModal(true);
                             }}
                             className="py-1.5 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-primary-100 transition-colors"
+                            title="Book Manually"
                           >
                             <UserPlus className="w-3 h-3" />
-                            Book
                           </button>
                         )}
                       </div>
@@ -469,6 +506,10 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-rose-50 border border-rose-200 border-dashed rounded shadow-sm"></div>
           Blocked
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-purple-50 border border-purple-500 rounded shadow-sm"></div>
+          Final Round
         </div>
       </div>
     </div>
