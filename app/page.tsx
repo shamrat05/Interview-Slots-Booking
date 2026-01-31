@@ -197,280 +197,255 @@ export default function Home() {
           </div>
         </div>
         
-        {/* World Class Hero Banner */}
-        <section className="relative mb-10 overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-32 -mt-32 w-64 h-64 bg-primary-200 rounded-full blur-[100px] opacity-15 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-64 h-64 bg-indigo-200 rounded-full blur-[100px] opacity-15 pointer-events-none"></div>
-          
-          <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl shadow-slate-950/50 flex flex-col md:flex-row items-center gap-6 md:gap-8 border border-white/10">
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <div className="w-5 h-5 bg-green-400/20 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+        {/* Clean Hero Section */}
+        <section className="mb-12 sm:mb-16">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-full mb-4">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs font-medium text-primary-700">Available Now</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+              Schedule Your <span className="text-primary-600">Interview</span>
+            </h1>
+            <p className="text-base sm:text-lg text-slate-600 mb-6 leading-relaxed">
+              Select a time that works best for you. This is a <span className="font-semibold">{config?.slotDurationMinutes || 60}-minute</span> technical interview conducted over video.
+            </p>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+              <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-primary-600">
+                  {slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}
                 </div>
-                <span className="text-[10px] font-bold text-green-300 uppercase tracking-widest">System Ready • Asia/Dhaka</span>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Open Slots</div>
               </div>
-              <h2 className="text-xl sm:text-3xl font-bold text-white font-heading tracking-tight mb-3 leading-tight">
-                Book Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-indigo-400">Interview</span>
-              </h2>
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg mb-3">
-                <span className="text-slate-200 font-semibold">{config?.slotDurationMinutes || 60} mins</span> technical interview. Select your preferred date & time below.
-              </p>
-              <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-2.5 mb-4 max-w-lg shadow-md">
-                <div className="flex gap-2 items-start">
-                  <span className="text-lg mt-0 shrink-0">⚠️</span>
-                  <div className="min-w-0">
-                    <p className="text-red-100 text-[11px] sm:text-xs font-bold leading-tight">No-show Policy</p>
-                    <p className="text-red-100 text-[10px] sm:text-xs opacity-90 leading-snug">Failing to join will result in blacklist status.</p>
-                  </div>
+              <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-slate-900">
+                  {dates.length}
                 </div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Available Days</div>
               </div>
-              <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10 group hover:bg-white/10 transition-colors">
-                  <div className="w-6 h-6 bg-primary-500/20 rounded-lg flex items-center justify-center">
-                    <Clock className="w-3 h-3 text-primary-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Duration</p>
-                    <p className="text-[10px] text-white font-bold">{config?.slotDurationMinutes || 60} min</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10 group hover:bg-white/10 transition-colors">
-                  <div className="w-6 h-6 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-3 h-3 text-indigo-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Free Slots</p>
-                    <p className="text-[10px] text-white font-bold">{slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10 group hover:bg-white/10 transition-colors">
-                  <div className="w-6 h-6 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-3 h-3 text-green-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Secure</p>
-                    <p className="text-[10px] text-white font-bold">SSL Protected</p>
-                  </div>
-                </div>
+              <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-slate-900">📅</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Instant Confirm</div>
               </div>
             </div>
-            
-            <div className="hidden sm:flex w-full sm:w-auto shrink-0 flex-col items-center bg-gradient-to-br from-slate-700/60 to-slate-800/60 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-lg shadow-slate-950/50">
-              <div className="w-12 h-12 bg-gradient-to-tr from-primary-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20 mb-2">
-                <Rocket className="w-6 h-6 text-white" />
+
+            {/* Important Notice */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
+              <div className="flex gap-3">
+                <span className="text-lg shrink-0">⚠️</span>
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-amber-900 mb-0.5">No-show Policy</p>
+                  <p className="text-xs text-amber-800">Missing your interview will result in blacklist status on your account.</p>
+                </div>
               </div>
-              <p className="text-white font-bold text-sm mb-1">Get Started</p>
-              <p className="text-slate-400 text-[11px] font-medium mb-3 text-center">Easy 3-step booking process</p>
-              <div className="text-[10px] text-primary-300 font-bold uppercase tracking-widest">Asia/Dhaka</div>
             </div>
           </div>
         </section>
 
-        {/* Date Selection - Sophisticated Chips */}
-        {dates.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center gap-3 mb-4 p-3 bg-slate-800/50 rounded-xl border border-primary-500/30 w-fit">
-              <div className="w-8 h-8 bg-primary-500/40 rounded-lg flex items-center justify-center border border-primary-400/60">
-                <Calendar className="w-4 h-4 text-primary-200" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider">Select Date</h3>
-            </div>
-            <p className="text-xs text-slate-400 mb-3 ml-0.5">Choose a date that works best for you. All times shown in Bangladesh Standard Time.</p>
-            
-            <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {dates.map((dateInfo) => (
-                <button
-                  key={dateInfo.date}
-                  onClick={() => setSelectedDate(dateInfo.date)}
-                  className={`flex-shrink-0 px-4 sm:px-5 py-3 rounded-lg sm:rounded-xl transition-all duration-300 border-2 flex flex-col items-center min-w-[110px] relative group text-center ${
-                    selectedDate === dateInfo.date
-                      ? 'bg-slate-700 border-primary-500 text-white shadow-xl shadow-primary-500/20'
-                      : 'bg-slate-700/50 border-slate-600 text-slate-300 hover:border-slate-500 hover:bg-slate-700'
-                  }`}
-                >
-                  {selectedDate === dateInfo.date && (
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-primary-500 rounded-full"></div>
-                  )}
-                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${selectedDate === dateInfo.date ? 'text-primary-400' : 'text-slate-500'}`}>
-                    {dateInfo.isToday ? 'Today' : dateInfo.isTomorrow ? 'Tomorrow' : format(new Date(dateInfo.date), 'EEEE')}
-                  </span>
-                  <span className="text-lg font-bold tracking-tight">{dateInfo.displayName}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Time Slots Grid - Elevated Cards */}
-        <section>
-          {currentSlots.length > 0 ? (
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 shadow-sm relative overflow-hidden">
-              <div className="flex items-center justify-between mb-6 sm:mb-8">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 h-10 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center border border-slate-100">
-                    <Clock className="w-4 h-4 sm:w-5 h-5 text-slate-400" />
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* Left Column: Guidelines */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-20 bg-gradient-to-b from-slate-50 to-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Before You JOIN</h3>
+              <ul className="space-y-3">
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-primary-700">1</span>
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Available Times</h3>
-                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{format(new Date(selectedDate), 'MMM d, yyyy')}</p>
+                    <p className="text-xs font-medium text-slate-900">Test Your Setup</p>
+                    <p className="text-xs text-slate-500">Check camera, mic, and internet</p>
                   </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-primary-700">2</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-900">Pick a Quiet Space</p>
+                    <p className="text-xs text-slate-500">Professional environment matters</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-primary-700">3</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-900">Prepare Your Materials</p>
+                    <p className="text-xs text-slate-500">Have your resume and ID ready</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-primary-700">4</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-900">Join Early</p>
+                    <p className="text-xs text-slate-500">5 minutes before your time</p>
+                  </div>
+                </li>
+              </ul>
+
+              {/* Security Badge */}
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <span className="text-lg">⚠️</span>
+                  <span className="font-medium">Only book a slot from the options below if you can attend.</span>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-100">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-[9px] font-bold text-green-700 uppercase tracking-widest">{currentSlots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length} Free</span>
-                </div>
+                <p className="text-[11px] text-slate-500 mt-1"> Do not book a time you cannot commit to. Failure to attend the interview will result in being blacklisted from future opportunities. </p>
               </div>
-              <p className="text-xs text-slate-600 ml-0.5 bg-blue-50 border border-blue-200 rounded-lg p-2 text-blue-700 font-medium">💡 Click on any time slot to reserve. You'll receive instant confirmation with the video meeting link!</p>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
-                {currentSlots.map((slot) => {
-                  const isUnavailable = slot.isBooked || slot.isPast || slot.isBlocked;
-                  
-                  return (
+            </div>
+          </div>
+
+          {/* Middle Column: Date & Time Selection */}
+          <div className="lg:col-span-2">
+            {/* Date Picker */}
+            {dates.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary-600" />
+                  Select Date
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {dates.map((dateInfo) => (
                     <button
-                      key={slot.id}
-                      onClick={() => handleSlotClick(slot)}
-                      disabled={isUnavailable}
-                      className={`group relative p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 transition-all duration-500 flex flex-col items-center justify-center min-h-[110px] sm:min-h-[140px] ${
-                        isUnavailable
-                          ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60'
-                          : 'bg-white border-slate-200 text-slate-900 hover:border-primary-500 hover:ring-8 hover:ring-primary-50 hover:shadow-2xl hover:-translate-y-2'
+                      key={dateInfo.date}
+                      onClick={() => setSelectedDate(dateInfo.date)}
+                      className={`p-3 rounded-lg border-2 transition-all duration-200 text-center ${
+                        selectedDate === dateInfo.date
+                          ? 'border-primary-600 bg-primary-50 shadow-md'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex flex-col items-center gap-3 relative z-10">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-1 transition-all duration-500 ${
-                          isUnavailable ? 'bg-slate-100 text-slate-300' : 'bg-primary-50 text-primary-600 group-hover:bg-primary-600 group-hover:text-white'
-                        }`}>
-                          <DynamicClockIcon time={slot.startTime} className="w-5 h-5" />
-                        </div>
-                        <span className="font-bold text-xl tracking-tighter">
-                          {slot.startTime}
-                        </span>
-                        <div className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border transition-all duration-500 ${
-                          slot.isBooked ? 'bg-red-50 text-red-400 border-red-100' : 
-                          slot.isPast ? 'bg-slate-100 text-slate-400 border-slate-200' : 
-                          slot.isBlocked ? 'bg-amber-50 text-amber-400 border-amber-100' : 
-                          'bg-primary-50 text-primary-600 border-primary-100 group-hover:bg-primary-600 group-hover:text-white group-hover:border-primary-600'
-                        }`}>
-                          {slot.isBooked ? 'Reserved' : slot.isPast ? 'Expired' : slot.isBlocked ? 'Unavailable' : 'Book Now'}
-                        </div>
+                      <div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1">
+                        {dateInfo.isToday ? 'Today' : dateInfo.isTomorrow ? 'Tomorrow' : format(new Date(dateInfo.date), 'EEE')}
                       </div>
-
-                      {!isUnavailable && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]" />
-                      )}
+                      <div className={`text-sm font-bold ${selectedDate === dateInfo.date ? 'text-primary-700' : 'text-slate-900'}`}>
+                        {dateInfo.displayName}
+                      </div>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-10 sm:p-16 text-center shadow-sm">
-              <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-100">
-                <Calendar className="w-8 h-8 text-slate-200" />
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">No Slots Available</h3>
-              <p className="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">Select another date from above.</p>
-            </div>
-          )}
-        </section>
+            )}
 
-        {/* Interview Tips Section */}
-        <section className="mt-12 bg-gradient-to-r from-primary-50 to-indigo-50 rounded-2xl border border-primary-200 p-6 sm:p-8">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center mt-0.5">
-              <span className="text-white text-sm font-bold">💡</span>
-            </div>
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-2">Interview Tips</h3>
-              <ul className="text-xs sm:text-sm text-slate-600 space-y-1.5">
-                <li>✓ Join 5 minutes early via the meeting link you'll receive</li>
-                <li>✓ Use a quiet place with good internet connection</li>
-                <li>✓ Have your resume and ID ready</li>
-                <li>✓ Check your camera and microphone before starting</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-        <section className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="group bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-500 flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="w-12 h-12 sm:w-14 h-14 bg-green-50 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-6 transition-all duration-500 border border-green-100 relative z-10">
-              <CheckCircle2 className="w-6 h-6 sm:w-7 h-7 text-green-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tighter">
-                {slots.filter(s => !s.isBooked && !s.isBlocked && !s.isPast).length}
+            {/* Time Slots */}
+            {currentSlots.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary-600" />
+                  Available Times – {format(new Date(selectedDate), 'MMM d')}
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {currentSlots.map((slot) => {
+                    const isUnavailable = slot.isBooked || slot.isPast || slot.isBlocked;
+                    
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => handleSlotClick(slot)}
+                        disabled={isUnavailable}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 text-center font-semibold flex flex-col items-center justify-center min-h-[100px] ${
+                          isUnavailable
+                            ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed opacity-50'
+                            : 'border-slate-200 bg-white hover:border-primary-400 hover:bg-primary-50 hover:shadow-md'
+                        }`}
+                      >
+                        <Clock className="w-4 h-4 mb-2" />
+                        <span className="text-base">{slot.startTime}</span>
+                        <span className={`text-[10px] font-medium uppercase tracking-wide mt-1 px-2 py-0.5 rounded ${
+                          slot.isBooked ? 'bg-red-100 text-red-700' :
+                          slot.isPast ? 'bg-slate-100 text-slate-600' :
+                          slot.isBlocked ? 'bg-amber-100 text-amber-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {slot.isBooked ? 'Booked' : slot.isPast ? 'Past' : slot.isBlocked ? 'Blocked' : 'Book'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Slots</div>
-            </div>
-          </div>
-          
-          <div className="group bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-500 flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="w-12 h-12 sm:w-14 h-14 bg-primary-50 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:-rotate-6 transition-all duration-500 border border-primary-100 relative z-10">
-              <Users className="w-6 h-6 sm:w-7 h-7 text-primary-500" />
-            </div>
-            <div className="relative z-10">
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tighter">
-                {slots.filter(s => s.isBooked).length}
+            ) : (
+              <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-200">
+                <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-600 font-medium">No time slots available</p>
+                <p className="text-sm text-slate-500">Try selecting a different date</p>
               </div>
-              <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Booked</div>
-            </div>
+            )}
           </div>
-        </section>
-
-        {/* Security & Assurance Footer Info */}
-        <section className="mt-12 pt-8 border-t border-slate-200">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-xl font-black text-primary-600 mb-1">🔒</div>
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">SSL Encrypted</p>
-            </div>
-            <div>
-              <div className="text-xl font-black text-primary-600 mb-1">✓</div>
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Instant Confirmation</p>
-            </div>
-            <div>
-              <div className="text-xl font-black text-primary-600 mb-1">📧</div>
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Email Reminder</p>
-            </div>
-            <div>
-              <div className="text-xl font-black text-primary-600 mb-1">🎥</div>
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Video Interview</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Available Jobs - Injected Section */}
-        <div className="mt-12" id="job-board-section">
-          <JobBoard />
         </div>
+
+        {/* Job Openings Section */}
+        <section className="mb-12 bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Available Positions</h2>
+            <p className="text-slate-600">Explore the opportunities we're currently hiring for.</p>
+          </div>
+          <div id="job-board-section">
+            <JobBoard />
+          </div>
+        </section>
+
+        {/* Trust Indicators */}
+        <section className="mb-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-4 text-center">
+            <div className="text-2xl mb-2">🔒</div>
+            <p className="text-xs font-semibold text-slate-900">SSL Encrypted</p>
+            <p className="text-[11px] text-slate-500 mt-1">Enterprise-grade security</p>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 p-4 text-center">
+            <div className="text-2xl mb-2">⚡</div>
+            <p className="text-xs font-semibold text-slate-900">Instant Confirm</p>
+            <p className="text-[11px] text-slate-500 mt-1">Real-time confirmation</p>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 p-4 text-center">
+            <div className="text-2xl mb-2">📧</div>
+            <p className="text-xs font-semibold text-slate-900">Email Reminder</p>
+            <p className="text-[11px] text-slate-500 mt-1">Never miss your slot</p>
+          </div>
+          <div className="bg-white rounded-lg border border-slate-200 p-4 text-center">
+            <div className="text-2xl mb-2">🎥</div>
+            <p className="text-xs font-semibold text-slate-900">Video Meeting</p>
+            <p className="text-[11px] text-slate-500 mt-1">Professional interview</p>
+          </div>
+        </section>
       </main>
 
       {/* Professional Footer */}
-      <footer className="bg-slate-900 pt-12 sm:pt-16 pb-6 mt-12 border-t border-white/5">
+      <footer className="bg-white border-t border-slate-200 pt-12 pb-8 mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 pb-8 border-b border-slate-200">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20">
-                  <Calendar className="w-3 h-3 text-white" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/20">
+                  <Calendar className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-base font-bold text-white tracking-tight font-heading">LevelAxis</h2>
+                <h2 className="text-lg font-bold text-slate-900">LevelAxis</h2>
               </div>
-              <p className="text-slate-400 text-xs max-w-xs leading-relaxed">World-class recruitment technology. Fast, fair, and transparent interview scheduling.</p>
+              <p className="text-sm text-slate-600 leading-relaxed">World-class recruitment technology built for transparency and efficiency.</p>
             </div>
-            <div className="text-sm">
-              <p className="text-slate-500 text-xs mb-2 font-semibold">Questions?</p>
-              <a href="mailto:shamrat@levelaxishq.com" className="text-white font-bold hover:text-primary-400 transition-colors text-xs">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Quick Links</h3>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li><a href="#" className="hover:text-primary-600 transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-primary-600 transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-primary-600 transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Support</h3>
+              <p className="text-sm text-slate-600 mb-2">Have questions? We're here to help.</p>
+              <a href="mailto:shamrat@levelaxishq.com" className="text-primary-600 font-medium hover:text-primary-700 transition-colors text-sm">
                 shamrat@levelaxishq.com
               </a>
             </div>
           </div>
-          <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] text-slate-500">
-            <p>© {new Date().getFullYear()} LevelAxis. All rights reserved. | Asia/Dhaka Timezone</p>
+          <div className="text-center text-xs text-slate-500">
+            <p>© {new Date().getFullYear()} LevelAxis. All rights reserved. | Based in Asia/Dhaka Timezone</p>
           </div>
         </div>
       </footer>
