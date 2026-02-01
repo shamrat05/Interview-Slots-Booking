@@ -113,6 +113,20 @@ export default function Home() {
   const dates = getDatesForDisplay();
   const currentSlots = getSlotsForSelectedDate();
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    'name': 'LevelAxis Interview Scheduler',
+    'url': 'https://interview-slots-booking.vercel.app/',
+    'description': 'Professional interview scheduling system for LevelAxis recruitment.',
+    'applicationCategory': 'BusinessApplication',
+    'operatingSystem': 'Web',
+    'author': {
+      '@type': 'Organization',
+      'name': 'LevelAxis'
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -146,6 +160,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-primary-100 selection:text-primary-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <WelcomeNotice />
       
       {/* Refined Premium Header */}
@@ -159,7 +177,7 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 uppercase font-heading">LevelAxis</h1>
+              <p className="text-xl font-bold tracking-tight text-slate-900 uppercase font-heading">LevelAxis</p>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Scheduler</p>
