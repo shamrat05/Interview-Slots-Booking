@@ -390,8 +390,10 @@ export default function Home() {
             ) : (
               <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-200">
                 <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium">No time slots available</p>
-                <p className="text-sm text-slate-500">Try selecting a different date</p>
+                <p className="text-slate-600 font-medium">
+                  {dates.length === 0 ? "Not available, come back later" : "No time slots available"}
+                </p>
+                {dates.length > 0 && <p className="text-sm text-slate-500">Try selecting a different date</p>}
               </div>
             )}
           </div>

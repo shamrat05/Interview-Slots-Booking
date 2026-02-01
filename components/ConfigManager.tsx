@@ -187,7 +187,7 @@ export default function ConfigManager({ adminSecret }: ConfigManagerProps) {
               <label className="block text-sm text-gray-600 mb-1">Number of Days to Show</label>
               <input
                 type="number"
-                min="1"
+                min="0"
                 max="30"
                 value={config.numberOfDays}
                 onChange={(e) => setConfig({ ...config, numberOfDays: parseInt(e.target.value) })}
