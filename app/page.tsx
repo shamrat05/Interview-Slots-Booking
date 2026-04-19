@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, AlertCircle, Loader2, Lock } from 'lucide-react';
+import { Calendar, AlertCircle, Lock, ShieldCheck, Zap, Mail, Video } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 import JobBoard from '@/components/JobBoard';
 import WelcomeNotice from '@/components/WelcomeNotice';
@@ -250,6 +250,24 @@ export default function Home() {
           <div id="job-board-section" className="w-full">
             <JobBoard />
           </div>
+        </section>
+
+        {/* Trust Indicators */}
+        <section className="mb-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: ShieldCheck, label: 'SSL Encrypted', sub: 'Your data is safe', color: 'text-primary-600', bg: 'bg-primary-50' },
+            { icon: Zap,         label: 'Instant Confirm', sub: 'Booking confirmed live', color: 'text-amber-600', bg: 'bg-amber-50' },
+            { icon: Mail,        label: 'Email Details', sub: 'Sent right after booking', color: 'text-sky-600', bg: 'bg-sky-50' },
+            { icon: Video,       label: 'Video Interview', sub: 'Google Meet link provided', color: 'text-violet-600', bg: 'bg-violet-50' },
+          ].map(({ icon: Icon, label, sub, color, bg }) => (
+            <div key={label} className="bg-white rounded-lg border border-slate-200 p-4 text-center">
+              <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+                <Icon className={`w-5 h-5 ${color}`} />
+              </div>
+              <p className="text-xs font-semibold text-slate-900">{label}</p>
+              <p className="text-[11px] text-slate-500 mt-1">{sub}</p>
+            </div>
+          ))}
         </section>
       </main>
 

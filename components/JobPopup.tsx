@@ -166,7 +166,7 @@ function JobPopupContent() {
         <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[90] flex items-center justify-end">
           {/* Subtle label hint that appears on hover near the button */}
           <div className="absolute right-full mr-4 bg-white px-4 py-2 rounded-2xl shadow-xl border border-primary-50 text-[11px] font-bold text-primary-600 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none translate-x-2 group-hover:translate-x-0">
-            We're hiring! 🚀
+            We're hiring!
           </div>
           
           <button 
