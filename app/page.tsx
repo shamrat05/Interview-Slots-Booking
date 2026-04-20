@@ -125,9 +125,9 @@ export default function Home() {
 
       {/* Header */}
       <header className="fixed top-0 inset-x-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto pl-2 pr-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="LevelAxis" className="h-20 w-auto object-contain" />
+            <img src="/logo.png" alt="LevelAxis" className="h-28 w-auto object-contain" />
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Scheduler</p>
@@ -136,7 +136,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="pt-28 pb-16 max-w-5xl mx-auto px-4 sm:px-6">
+      <main className="pt-32 pb-16 max-w-5xl mx-auto px-4 sm:px-6">
 
         {/* Hero */}
         <section className="mb-12 sm:mb-14">
