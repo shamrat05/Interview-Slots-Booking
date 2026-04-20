@@ -127,7 +127,7 @@ export default function Home() {
       <header className="fixed top-0 inset-x-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="LevelAxis" className="h-10 w-auto object-contain" />
+            <img src="/logo.png" alt="LevelAxis" className="h-20 w-auto object-contain" />
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Scheduler</p>
@@ -243,7 +243,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 pb-8 border-b border-slate-200">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <img src="/logo.png" alt="LevelAxis" className="h-8 w-auto object-contain" />
+                <img src="/logo.png" alt="LevelAxis" className="h-16 w-auto object-contain" />
               </div>
               <p className="text-sm text-slate-600 leading-relaxed">Recruitment platform built for transparency and efficiency.</p>
             </div>
