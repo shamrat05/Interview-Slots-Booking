@@ -28,7 +28,7 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        const allSlots = data.data.slots;
+        const allSlots = (data.data.slots as TimeSlot[]).filter(s => !s.isFinalRound);
         setSlots(allSlots);
         if (data.data.config) setConfig(data.data.config);
         if (allSlots.length > 0) setSelectedDate(allSlots[0].date);

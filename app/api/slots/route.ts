@@ -120,11 +120,22 @@ export async function POST(request: NextRequest) {
 
     // Check if this is a final round slot
     const isFinalInterviewFromSlot = await storage.isSlotFinalRound(date, slotId);
-    
+
     // Safety check: Is this candidate an invited finalist?
     const prevBooking = await storage.findBookingByEmailOrPhone(email);
-    const isFinalInterviewFromCandidate = prevBooking ? !!(prevBooking as any).finalRoundEligible : false;
-    
+    const prevByPhone = await storage.findBookingByEmailOrPhone(whatsapp);
+    const isFinalInterviewFromCandidate =
+      (prevBooking ? !!(prevBooking as any).finalRoundEligible : false) ||
+      (prevByPhone ? !!(prevByPhone as any).finalRoundEligible : false);
+
+    // Final-round slots are reserved for invited finalists only.
+    if (!isAdmin && isFinalInterviewFromSlot && !isFinalInterviewFromCandidate) {
+      return NextResponse.json(
+        { success: false, error: 'This slot is reserved for final-round candidates. Please use the Final Round Portal.' },
+        { status: 403 }
+      );
+    }
+
     const isFinalInterview = isFinalInterviewFromSlot || isFinalInterviewFromCandidate;
 
     // Validate WhatsApp format again
