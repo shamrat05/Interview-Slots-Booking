@@ -3,6 +3,15 @@ import { TimeSlot, SlotGenerationConfig } from './types';
 import { getDb } from './mongodb';
 import { formatTimeToAMPM } from './utils';
 
+function normalizePhoneCore(raw: string): string {
+  if (!raw) return '';
+  let d = raw.replace(/\D/g, '');
+  if (d.length < 7) return '';
+  if (d.length > 10 && d.startsWith('880')) d = d.slice(3);
+  if (d.length > 10 && d.startsWith('0')) d = d.slice(1);
+  return d;
+}
+
 class KVStorage {
   private adminPassword: string = '';
   private initialized: boolean = false;
@@ -159,49 +168,22 @@ class KVStorage {
       return data;
     }
 
-    const allDigits = trimmed.replace(/\D/g, '');
-    if (allDigits.length < 7) return null;
+    const inputCore = normalizePhoneCore(trimmed);
+    if (!inputCore) return null;
 
-    let core = allDigits;
-    if (core.length > 10 && core.startsWith('880')) core = core.slice(3);
-    if (core.length > 10 && core.startsWith('0')) core = core.slice(1);
+    const docs = await db.collection('bookings')
+      .find({ whatsapp: { $exists: true, $ne: null } })
+      .toArray();
 
-    const docs = await db.collection('bookings').aggregate([
-      {
-        $addFields: {
-          _whatsappDigits: {
-            $reduce: {
-              input: {
-                $regexFindAll: { input: { $ifNull: ['$whatsapp', ''] }, regex: '[0-9]' }
-              },
-              initialValue: '',
-              in: { $concat: ['$$value', '$$this.match'] }
-            }
-          }
-        }
-      },
-      {
-        $match: {
-          $expr: {
-            $or: [
-              { $eq: ['$_whatsappDigits', allDigits] },
-              { $eq: ['$_whatsappDigits', core] },
-              {
-                $and: [
-                  { $gte: [{ $strLenCP: core }, 10] },
-                  { $regexMatch: { input: '$_whatsappDigits', regex: { $concat: [core, '$'] } } }
-                ]
-              }
-            ]
-          }
-        }
-      },
-      { $limit: 1 }
-    ]).toArray();
-
-    if (docs.length === 0) return null;
-    const { _id, _whatsappDigits, ...data } = docs[0] as any;
-    return data;
+    for (const doc of docs) {
+      const stored = (doc as any).whatsapp;
+      if (typeof stored !== 'string') continue;
+      if (normalizePhoneCore(stored) === inputCore) {
+        const { _id, ...data } = doc;
+        return data;
+      }
+    }
+    return null;
   }
 
   async blockDay(date: string): Promise<boolean> {
