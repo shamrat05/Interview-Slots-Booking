@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       breakDurationMinutes: config.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
       numberOfDays: config.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
       whatsappTemplate: config.whatsappTemplate ?? 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}',
+      finalRoundTemplate: config.finalRoundTemplate ?? 'Congratulations {name}! 🎉\n\nYou have qualified for the Final Round interview with LevelAxis.\n\nPlease verify your profile and book your final slot here:\n{link}\n\nThis is a critical step, please complete it ASAP.',
     };
 
     return NextResponse.json({ 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { startHour, endHour, slotDurationMinutes, breakDurationMinutes, numberOfDays, whatsappTemplate } = body;
+    const { startHour, endHour, slotDurationMinutes, breakDurationMinutes, numberOfDays, whatsappTemplate, finalRoundTemplate } = body;
 
     // Basic validation
     if (startHour >= endHour) {
@@ -76,7 +77,8 @@ export async function POST(request: NextRequest) {
       slotDurationMinutes: Number(slotDurationMinutes),
       breakDurationMinutes: Number(breakDurationMinutes),
       numberOfDays: Number(numberOfDays),
-      whatsappTemplate: whatsappTemplate || ''
+      whatsappTemplate: whatsappTemplate || '',
+      finalRoundTemplate: finalRoundTemplate || ''
     });
 
     return NextResponse.json({ success });

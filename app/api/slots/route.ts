@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if slot is blocked by admin (bypass if valid secret provided)
-    if (!isAdmin && (await storage.isSlotBlocked(date, slotId) || await storage.isDayBlocked(date))) {
+    if (!isAdmin && await storage.isSlotEffectivelyBlocked(date, slotId)) {
       return NextResponse.json(
         { success: false, error: 'This slot is currently unavailable for booking.' },
         { status: 403 }

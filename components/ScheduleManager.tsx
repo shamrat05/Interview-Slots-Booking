@@ -290,7 +290,7 @@ export default function ScheduleManager({ adminSecret }: ScheduleManagerProps) {
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <div>
               <p className="font-bold">This day is fully blocked.</p>
-              <p className="text-sm">No slots are visible to applicants for this date.</p>
+              <p className="text-sm">Slots are hidden from applicants by default. Click <span className="font-bold">Unblock</span> on any individual slot below to make just that slot available.</p>
             </div>
           </div>
         )}

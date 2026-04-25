@@ -75,6 +75,7 @@ export interface SlotGenerationConfig {
   breakDurationMinutes: number;
   numberOfDays: number;
   whatsappTemplate?: string;
+  finalRoundTemplate?: string;
 }
 
 export interface ValidationResult {

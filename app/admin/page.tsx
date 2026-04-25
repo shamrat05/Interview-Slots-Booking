@@ -353,6 +353,7 @@ interface AdminData {
 
 interface GlobalConfig {
   whatsappTemplate: string;
+  finalRoundTemplate?: string;
 }
 
 interface ConfirmDialogProps {
@@ -1177,10 +1178,11 @@ export default function AdminPage() {
     
     if (booking.finalRoundEligible) {
       const finalLink = `${window.location.origin}/final-interview`;
-      message = `Congratulations {name}! 🎉\n\nYou have qualified for the Final Round interview with LevelAxis.\n\nPlease verify your profile and book your final slot here:\n{link}\n\nThis is a critical step, please complete it ASAP.`;
-      message = message
-        .replace('{name}', booking.name)
-        .replace('{link}', finalLink);
+      const defaultFinalTemplate = 'Congratulations {name}! 🎉\n\nYou have qualified for the Final Round interview with LevelAxis.\n\nPlease verify your profile and book your final slot here:\n{link}\n\nThis is a critical step, please complete it ASAP.';
+      const template = config?.finalRoundTemplate || defaultFinalTemplate;
+      message = template
+        .replace(/\{name\}/g, booking.name)
+        .replace(/\{link\}/g, finalLink);
     } else {
       const defaultTemplate = 'Hello {name}, your interview with LevelAxis is confirmed for {day}, {date} at {time}. Video Link: {link}';
       const template = config?.whatsappTemplate || defaultTemplate;

@@ -10,6 +10,7 @@ interface GlobalConfig {
   breakDurationMinutes: number;
   numberOfDays: number;
   whatsappTemplate: string;
+  finalRoundTemplate: string;
 }
 
 interface ConfigManagerProps {
@@ -206,6 +207,20 @@ export default function ConfigManager({ adminSecret }: ConfigManagerProps) {
               />
               <p className="text-[10px] text-gray-400 mt-1">
                 Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{day}`}</span>, <span className="font-mono text-primary-600">{`{date}`}</span>, <span className="font-mono text-primary-600">{`{time}`}</span>, <span className="font-mono text-primary-600">{`{link}`}</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Final Round Invitation Template</label>
+              <textarea
+                value={config.finalRoundTemplate}
+                onChange={(e) => setConfig({ ...config, finalRoundTemplate: e.target.value })}
+                rows={5}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-sm resize-none"
+                placeholder="Congratulations {name}! You qualified for the final round. Book your slot: {link}"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Sent when admin messages a candidate marked &quot;Final Round Eligible&quot;. Available placeholders: <span className="font-mono text-primary-600">{`{name}`}</span>, <span className="font-mono text-primary-600">{`{link}`}</span>
               </p>
             </div>
           </div>

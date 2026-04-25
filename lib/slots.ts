@@ -104,6 +104,7 @@ class KVStorage {
       { $setOnInsert: { date, slotId } },
       { upsert: true }
     );
+    await db.collection('unblocked_overrides').deleteOne({ date, slotId });
     return result.upsertedCount === 1 || result.matchedCount === 1;
   }
 
@@ -111,6 +112,13 @@ class KVStorage {
     this.ensureInitialized();
     const db = await getDb();
     const result = await db.collection('blocked_slots').deleteOne({ date, slotId });
+    if (await this.isDayBlocked(date)) {
+      await db.collection('unblocked_overrides').updateOne(
+        { date, slotId },
+        { $setOnInsert: { date, slotId } },
+        { upsert: true }
+      );
+    }
     return result.deletedCount;
   }
 
@@ -119,6 +127,28 @@ class KVStorage {
     const db = await getDb();
     const count = await db.collection('blocked_slots').countDocuments({ date, slotId });
     return count > 0;
+  }
+
+  async getUnblockedOverrides(date: string): Promise<Set<string>> {
+    this.ensureInitialized();
+    const db = await getDb();
+    const docs = await db.collection('unblocked_overrides').find({ date }).toArray();
+    return new Set(docs.map(d => d.slotId));
+  }
+
+  async hasUnblockedOverride(date: string, slotId: string): Promise<boolean> {
+    this.ensureInitialized();
+    const db = await getDb();
+    const count = await db.collection('unblocked_overrides').countDocuments({ date, slotId });
+    return count > 0;
+  }
+
+  async isSlotEffectivelyBlocked(date: string, slotId: string): Promise<boolean> {
+    if (await this.isSlotBlocked(date, slotId)) return true;
+    if (await this.isDayBlocked(date)) {
+      return !(await this.hasUnblockedOverride(date, slotId));
+    }
+    return false;
   }
 
   async setSlotFinalRound(date: string, slotId: string): Promise<boolean> {
@@ -194,6 +224,7 @@ class KVStorage {
       { $setOnInsert: { date } },
       { upsert: true }
     );
+    await db.collection('unblocked_overrides').deleteMany({ date });
     return result.upsertedCount === 1 || result.matchedCount === 1;
   }
 
@@ -201,6 +232,7 @@ class KVStorage {
     this.ensureInitialized();
     const db = await getDb();
     const result = await db.collection('blocked_days').deleteOne({ date });
+    await db.collection('unblocked_overrides').deleteMany({ date });
     return result.deletedCount;
   }
 
@@ -381,23 +413,26 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     dateStrings.push(`${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`);
   }
 
-  const [bookingsPerDay, blockedPerDay, finalRoundPerDay, dayBlockedStatuses] = await Promise.all([
+  const [bookingsPerDay, blockedPerDay, finalRoundPerDay, dayBlockedStatuses, overridesPerDay] = await Promise.all([
     Promise.all(dateStrings.map(d => storage.getBookings(d))),
     Promise.all(dateStrings.map(d => storage.getBlockedSlots(d))),
     Promise.all(dateStrings.map(d => storage.getFinalRoundSlots(d))),
     Promise.all(dateStrings.map(d => storage.isDayBlocked(d))),
+    Promise.all(dateStrings.map(d => storage.getUnblockedOverrides(d))),
   ]);
 
   const bookingsMap = new Map<string, Map<string, unknown>>();
   const blockedMap = new Map<string, Set<string>>();
   const finalRoundMap = new Map<string, Set<string>>();
   const dayBlockedMap = new Map<string, boolean>();
+  const overridesMap = new Map<string, Set<string>>();
 
   dateStrings.forEach((dateStr, i) => {
     bookingsMap.set(dateStr, bookingsPerDay[i]);
     blockedMap.set(dateStr, blockedPerDay[i]);
     finalRoundMap.set(dateStr, finalRoundPerDay[i]);
     dayBlockedMap.set(dateStr, dayBlockedStatuses[i]);
+    overridesMap.set(dateStr, overridesPerDay[i]);
   });
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
@@ -406,6 +441,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     const dayBookings = bookingsMap.get(dateStr) || new Map();
     const dayBlocked = blockedMap.get(dateStr) || new Set();
     const dayFinalRound = finalRoundMap.get(dateStr) || new Set();
+    const dayOverrides = overridesMap.get(dateStr) || new Set();
 
     const startMinutes = fullConfig.startHour * 60;
     const endMinutes = fullConfig.endHour * 60;
@@ -431,7 +467,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
       const bookingData = dayBookings.get(slotId);
       const isBooked = !!bookingData;
       const booking = bookingData as any;
-      const isBlocked = isFullDayBlocked || dayBlocked.has(slotId);
+      const isBlocked = dayBlocked.has(slotId) || (isFullDayBlocked && !dayOverrides.has(slotId));
       const isFinalRound = dayFinalRound.has(slotId);
 
       slots.push({
