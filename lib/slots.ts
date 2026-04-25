@@ -147,16 +147,60 @@ class KVStorage {
   async findBookingByEmailOrPhone(identifier: string): Promise<unknown | null> {
     this.ensureInitialized();
     const db = await getDb();
-    const emailNorm = identifier.toLowerCase();
-    const phoneNorm = identifier.replace(/\D/g, '');
-    const doc = await db.collection('bookings').findOne({
-      $or: [
-        { email: { $regex: new RegExp(`^${emailNorm}$`, 'i') } },
-        { whatsapp: { $regex: phoneNorm } }
-      ]
-    });
-    if (!doc) return null;
-    const { _id, ...data } = doc;
+    const trimmed = identifier.trim();
+
+    if (trimmed.includes('@')) {
+      const escaped = trimmed.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const doc = await db.collection('bookings').findOne({
+        email: { $regex: new RegExp(`^${escaped}$`, 'i') }
+      });
+      if (!doc) return null;
+      const { _id, ...data } = doc;
+      return data;
+    }
+
+    const allDigits = trimmed.replace(/\D/g, '');
+    if (allDigits.length < 7) return null;
+
+    let core = allDigits;
+    if (core.length > 10 && core.startsWith('880')) core = core.slice(3);
+    if (core.length > 10 && core.startsWith('0')) core = core.slice(1);
+
+    const docs = await db.collection('bookings').aggregate([
+      {
+        $addFields: {
+          _whatsappDigits: {
+            $reduce: {
+              input: {
+                $regexFindAll: { input: { $ifNull: ['$whatsapp', ''] }, regex: '[0-9]' }
+              },
+              initialValue: '',
+              in: { $concat: ['$$value', '$$this.match'] }
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          $expr: {
+            $or: [
+              { $eq: ['$_whatsappDigits', allDigits] },
+              { $eq: ['$_whatsappDigits', core] },
+              {
+                $and: [
+                  { $gte: [{ $strLenCP: core }, 10] },
+                  { $regexMatch: { input: '$_whatsappDigits', regex: { $concat: [core, '$'] } } }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      { $limit: 1 }
+    ]).toArray();
+
+    if (docs.length === 0) return null;
+    const { _id, _whatsappDigits, ...data } = docs[0] as any;
     return data;
   }
 
