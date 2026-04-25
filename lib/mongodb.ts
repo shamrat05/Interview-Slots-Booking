@@ -18,6 +18,7 @@ export async function getDb(): Promise<Db> {
   await db.collection('blocked_slots').createIndex({ date: 1, slotId: 1 }, { unique: true });
   await db.collection('blocked_days').createIndex({ date: 1 }, { unique: true });
   await db.collection('final_round_slots').createIndex({ date: 1, slotId: 1 }, { unique: true });
+  await db.collection('unblocked_overrides').createIndex({ date: 1, slotId: 1 }, { unique: true });
   await db.collection('app_config').createIndex({ key: 1 }, { unique: true });
   await db.collection('jobs').createIndex({ id: 1 }, { unique: true });
 

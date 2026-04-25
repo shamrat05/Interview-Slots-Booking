@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
 
     if (returnInfo) {
       const config = await storage.getGlobalConfig();
-      // Combine with defaults
       const fullConfig = {
         startHour: config.startHour ?? parseInt(process.env.START_HOUR || '9'),
         endHour: config.endHour ?? parseInt(process.env.END_HOUR || '17'),
@@ -26,25 +25,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, config: fullConfig });
     }
 
-    // Generate all slots with current booking status
-    const slots = await generateTimeSlots();
-
-    // Fetch dynamic config
-    const config = await storage.getGlobalConfig();
-    const fullConfig = {
-      startHour: config.startHour ?? parseInt(process.env.START_HOUR || '9'),
-      endHour: config.endHour ?? parseInt(process.env.END_HOUR || '24'),
-      slotDurationMinutes: config.slotDurationMinutes ?? parseInt(process.env.SLOT_DURATION_MINUTES || '60'),
-      breakDurationMinutes: config.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
-      numberOfDays: config.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
-    };
-
-    // Get unique dates and their blocked status
-    const dates = [...new Set(slots.map(s => s.date))];
-    const dayBlockedStatus: Record<string, boolean> = {};
-    await Promise.all(dates.map(async (date) => {
-      dayBlockedStatus[date] = await storage.isDayBlocked(date);
-    }));
+    const { slots, dayBlockedStatus, config: fullConfig } = await generateTimeSlots();
 
     return NextResponse.json({
       success: true,

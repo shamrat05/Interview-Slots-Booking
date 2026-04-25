@@ -295,6 +295,62 @@ class KVStorage {
     return new Set(docs.map(d => d.slotId));
   }
 
+  async getBookingsBatch(dates: string[]): Promise<Map<string, Map<string, unknown>>> {
+    this.ensureInitialized();
+    const map = new Map<string, Map<string, unknown>>();
+    for (const date of dates) map.set(date, new Map());
+    if (dates.length === 0) return map;
+    const db = await getDb();
+    const docs = await db.collection('bookings').find({ date: { $in: dates } }).toArray();
+    for (const doc of docs) {
+      const { _id, ...data } = doc;
+      const bucket = map.get(doc.date);
+      if (bucket) bucket.set(doc.slotId, data);
+    }
+    return map;
+  }
+
+  async getBlockedSlotsBatch(dates: string[]): Promise<Map<string, Set<string>>> {
+    this.ensureInitialized();
+    const map = new Map<string, Set<string>>();
+    for (const date of dates) map.set(date, new Set());
+    if (dates.length === 0) return map;
+    const db = await getDb();
+    const docs = await db.collection('blocked_slots').find({ date: { $in: dates } }).toArray();
+    for (const doc of docs) map.get(doc.date)?.add(doc.slotId);
+    return map;
+  }
+
+  async getFinalRoundSlotsBatch(dates: string[]): Promise<Map<string, Set<string>>> {
+    this.ensureInitialized();
+    const map = new Map<string, Set<string>>();
+    for (const date of dates) map.set(date, new Set());
+    if (dates.length === 0) return map;
+    const db = await getDb();
+    const docs = await db.collection('final_round_slots').find({ date: { $in: dates } }).toArray();
+    for (const doc of docs) map.get(doc.date)?.add(doc.slotId);
+    return map;
+  }
+
+  async getUnblockedOverridesBatch(dates: string[]): Promise<Map<string, Set<string>>> {
+    this.ensureInitialized();
+    const map = new Map<string, Set<string>>();
+    for (const date of dates) map.set(date, new Set());
+    if (dates.length === 0) return map;
+    const db = await getDb();
+    const docs = await db.collection('unblocked_overrides').find({ date: { $in: dates } }).toArray();
+    for (const doc of docs) map.get(doc.date)?.add(doc.slotId);
+    return map;
+  }
+
+  async getBlockedDaysSet(dates: string[]): Promise<Set<string>> {
+    this.ensureInitialized();
+    if (dates.length === 0) return new Set();
+    const db = await getDb();
+    const docs = await db.collection('blocked_days').find({ date: { $in: dates } }).toArray();
+    return new Set(docs.map(d => d.date));
+  }
+
   async getJobs(): Promise<any[]> {
     this.ensureInitialized();
     const db = await getDb();
@@ -390,7 +446,13 @@ export function isPastSlot(dateStr: string, startTime: string): boolean {
   return h * 60 + m <= bdNow.hours * 60 + bdNow.minutes;
 }
 
-export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>): Promise<TimeSlot[]> {
+export interface SchedulerSnapshot {
+  slots: TimeSlot[];
+  dayBlockedStatus: Record<string, boolean>;
+  config: SlotGenerationConfig;
+}
+
+export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>): Promise<SchedulerSnapshot> {
   const dynamicConfig = await storage.getGlobalConfig();
 
   const fullConfig: SlotGenerationConfig = {
@@ -399,6 +461,8 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     slotDurationMinutes: dynamicConfig.slotDurationMinutes ?? parseInt(process.env.SLOT_DURATION_MINUTES || '60'),
     breakDurationMinutes: dynamicConfig.breakDurationMinutes ?? parseInt(process.env.BREAK_DURATION_MINUTES || '15'),
     numberOfDays: dynamicConfig.numberOfDays ?? parseInt(process.env.BOOKING_DAYS || '3'),
+    whatsappTemplate: dynamicConfig.whatsappTemplate,
+    finalRoundTemplate: dynamicConfig.finalRoundTemplate,
     ...config,
   };
 
@@ -413,31 +477,20 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     dateStrings.push(`${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`);
   }
 
-  const [bookingsPerDay, blockedPerDay, finalRoundPerDay, dayBlockedStatuses, overridesPerDay] = await Promise.all([
-    Promise.all(dateStrings.map(d => storage.getBookings(d))),
-    Promise.all(dateStrings.map(d => storage.getBlockedSlots(d))),
-    Promise.all(dateStrings.map(d => storage.getFinalRoundSlots(d))),
-    Promise.all(dateStrings.map(d => storage.isDayBlocked(d))),
-    Promise.all(dateStrings.map(d => storage.getUnblockedOverrides(d))),
+  const [bookingsMap, blockedMap, finalRoundMap, blockedDaysSet, overridesMap] = await Promise.all([
+    storage.getBookingsBatch(dateStrings),
+    storage.getBlockedSlotsBatch(dateStrings),
+    storage.getFinalRoundSlotsBatch(dateStrings),
+    storage.getBlockedDaysSet(dateStrings),
+    storage.getUnblockedOverridesBatch(dateStrings),
   ]);
 
-  const bookingsMap = new Map<string, Map<string, unknown>>();
-  const blockedMap = new Map<string, Set<string>>();
-  const finalRoundMap = new Map<string, Set<string>>();
-  const dayBlockedMap = new Map<string, boolean>();
-  const overridesMap = new Map<string, Set<string>>();
-
-  dateStrings.forEach((dateStr, i) => {
-    bookingsMap.set(dateStr, bookingsPerDay[i]);
-    blockedMap.set(dateStr, blockedPerDay[i]);
-    finalRoundMap.set(dateStr, finalRoundPerDay[i]);
-    dayBlockedMap.set(dateStr, dayBlockedStatuses[i]);
-    overridesMap.set(dateStr, overridesPerDay[i]);
-  });
+  const dayBlockedStatus: Record<string, boolean> = {};
+  for (const dateStr of dateStrings) dayBlockedStatus[dateStr] = blockedDaysSet.has(dateStr);
 
   for (let dayOffset = 0; dayOffset < fullConfig.numberOfDays; dayOffset++) {
     const dateStr = dateStrings[dayOffset];
-    const isFullDayBlocked = dayBlockedMap.get(dateStr) || false;
+    const isFullDayBlocked = blockedDaysSet.has(dateStr);
     const dayBookings = bookingsMap.get(dateStr) || new Map();
     const dayBlocked = blockedMap.get(dateStr) || new Set();
     const dayFinalRound = finalRoundMap.get(dateStr) || new Set();
@@ -491,7 +544,7 @@ export async function generateTimeSlots(config?: Partial<SlotGenerationConfig>):
     }
   }
 
-  return slots;
+  return { slots, dayBlockedStatus, config: fullConfig };
 }
 
 export function formatDateDisplay(dateStr: string): string {
